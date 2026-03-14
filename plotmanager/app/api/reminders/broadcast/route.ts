@@ -1,0 +1,121 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { broadcastSchema } from '@/lib/validations'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { broadcastEmailHtml } from '@/lib/email-templates'
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    const companyId = profile.company_id!
+    const adminClient = createAdminClient()
+
+    const body = await request.json()
+    const parsed = broadcastSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    // Verify estate belongs to company
+    const { data: estate } = await adminClient
+      .from('estates')
+      .select('id, name')
+      .eq('id', parsed.data.estate_id)
+      .eq('company_id', companyId)
+      .single()
+
+    if (!estate) {
+      return NextResponse.json({ error: 'Estate not found' }, { status: 404 })
+    }
+
+    // Fetch buyers with email in this estate
+    const { data: buyers } = await adminClient
+      .from('buyers')
+      .select('id, email, first_name, last_name')
+      .eq('estate_id', parsed.data.estate_id)
+      .eq('company_id', companyId)
+      .not('email', 'is', null)
+      .neq('email', '')
+
+    if (!buyers || buyers.length === 0) {
+      return NextResponse.json(
+        { error: 'No buyers with email addresses in this estate' },
+        { status: 400 }
+      )
+    }
+
+    // Get company name
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('name')
+      .eq('id', companyId)
+      .single()
+
+    const companyName = company?.name || 'Your Real Estate Company'
+
+    let sent = 0
+    let failed = 0
+
+    // Send in batches of 50
+    const batchSize = 50
+    for (let i = 0; i < buyers.length; i += batchSize) {
+      const batch = buyers.slice(i, i + batchSize)
+
+      const emails = batch.map((buyer) => ({
+        from: FROM_EMAIL,
+        to: buyer.email!,
+        subject: parsed.data.subject,
+        html: broadcastEmailHtml({
+          buyerFirstName: buyer.first_name,
+          companyName,
+          subject: parsed.data.subject,
+          messageBody: parsed.data.message,
+        }),
+      }))
+
+      try {
+        await getResend().batch.send(emails)
+        sent += batch.length
+      } catch {
+        failed += batch.length
+      }
+    }
+
+    // Record reminders for all buyers
+    const reminderRows = buyers.map((buyer) => ({
+      buyer_id: buyer.id,
+      company_id: companyId,
+      reminder_type: 'custom' as const,
+      message: `[Broadcast: ${parsed.data.subject}] ${parsed.data.message}`.slice(0, 1024),
+      sent_via: 'email' as const,
+      sent_at: new Date().toISOString(),
+      sent_by: user.id,
+    }))
+
+    await adminClient.from('reminders').insert(reminderRows)
+
+    return NextResponse.json({ sent, failed, total: buyers.length }, { status: 200 })
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
