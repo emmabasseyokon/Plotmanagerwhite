@@ -8,9 +8,13 @@ export async function POST() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    console.log('[Onboarding] user:', user?.id ?? 'null')
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.log('[Onboarding] APP_COMPANY_ID:', APP_COMPANY_ID || 'EMPTY')
 
     if (!APP_COMPANY_ID) {
       return NextResponse.json({ error: 'APP_COMPANY_ID is not configured' }, { status: 500 })
@@ -19,7 +23,7 @@ export async function POST() {
     const admin = createAdminClient()
 
     // Create or update profile — assign to the pre-seeded company
-    const { error: profileError } = await admin
+    const { data: profileData, error: profileError } = await admin
       .from('profiles')
       .upsert({
         id: user.id,
@@ -28,8 +32,12 @@ export async function POST() {
         role: 'admin',
         company_id: APP_COMPANY_ID,
       })
+      .select()
+
+    console.log('[Onboarding] upsert result:', JSON.stringify(profileData), 'error:', profileError?.message ?? 'none')
 
     if (profileError) {
+      console.error('[Onboarding] Profile creation failed:', profileError)
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 

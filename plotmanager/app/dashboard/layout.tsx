@@ -9,27 +9,36 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  console.log('[DashboardLayout] user:', user?.id ?? 'null', 'error:', userError?.message ?? 'none')
 
   if (!user) {
+    console.log('[DashboardLayout] No user, redirecting to /login')
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
+  console.log('[DashboardLayout] profile:', profile ? JSON.stringify(profile) : 'null', 'error:', profileError?.message ?? 'none')
+
   if (!profile) {
+    console.log('[DashboardLayout] No profile, redirecting to /onboarding')
     redirect('/onboarding')
   }
 
   const typedProfile = profile as Tables<'profiles'>
 
   if (!typedProfile.company_id) {
+    console.log('[DashboardLayout] No company_id, redirecting to /onboarding')
     redirect('/onboarding')
   }
+
+  console.log('[DashboardLayout] OK — rendering dashboard for', typedProfile.full_name)
 
   return (
     <div className="flex min-h-screen">
