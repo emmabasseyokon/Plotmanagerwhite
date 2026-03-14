@@ -31,7 +31,9 @@ export default async function proxy(request: NextRequest) {
 
   // IMPORTANT: Do not add logic between createServerClient and getUser()
   // A simple getUser() call is enough to refresh the session if needed
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  console.log('[Proxy]', request.nextUrl.pathname, '→ user:', user?.id ?? 'anonymous')
 
   return supabaseResponse
 }
