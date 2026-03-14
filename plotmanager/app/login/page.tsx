@@ -52,21 +52,6 @@ export default function LoginPage() {
           setAuthError(error.message)
         }
       } else {
-        // Check if user has completed onboarding (has a profile)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', user.id)
-            .single()
-
-          if (!profile) {
-            router.push('/onboarding')
-            router.refresh()
-            return
-          }
-        }
         router.push('/dashboard')
         router.refresh()
       }
@@ -155,11 +140,8 @@ export default function LoginPage() {
                 Sign in
               </Button>
 
-              <p className="text-center text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
-                <Link href="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
-                  Sign up
-                </Link>
+              <p className="text-center text-sm text-gray-500">
+                Contact your administrator for access.
               </p>
             </form>
           </CardContent>

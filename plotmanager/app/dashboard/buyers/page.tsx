@@ -35,7 +35,7 @@ export default async function BuyersPage({
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect('/login')
   const companyId = profile.company_id!
 
   let query = supabase

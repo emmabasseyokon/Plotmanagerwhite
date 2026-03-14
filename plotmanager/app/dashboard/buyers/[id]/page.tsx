@@ -56,7 +56,7 @@ export default async function BuyerDetailPage({
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect('/login')
   const companyId = profile.company_id!
 
   const { data: buyerRaw } = await supabase

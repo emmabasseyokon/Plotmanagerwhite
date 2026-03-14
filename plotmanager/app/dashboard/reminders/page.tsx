@@ -30,7 +30,7 @@ export default async function RemindersPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect('/login')
   const companyId = profile.company_id!
 
   const adminClient = createAdminClient()

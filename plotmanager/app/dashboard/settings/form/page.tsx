@@ -15,7 +15,7 @@ export default async function FormSettingsPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect('/login')
 
   if (profile.role !== 'super_admin') redirect('/dashboard')
 

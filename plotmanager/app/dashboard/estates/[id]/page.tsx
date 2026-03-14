@@ -36,7 +36,7 @@ export default async function EstateDetailPage({
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect('/login')
   const companyId = profile.company_id!
 
   const { data: estateRaw } = await supabase

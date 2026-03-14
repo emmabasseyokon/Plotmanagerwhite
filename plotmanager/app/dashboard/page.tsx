@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     .single()
 
   if (!profile) {
-    redirect('/onboarding')
+    redirect('/login')
   }
 
   const companyId = profile.company_id!
