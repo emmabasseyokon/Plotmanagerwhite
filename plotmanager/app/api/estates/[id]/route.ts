@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { estateSchema } from '@/lib/validations'
 
 export async function GET(
@@ -24,8 +24,8 @@ export async function GET(
     }
 
     return NextResponse.json({ estate })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'estates/[id]')
   }
 }
 
@@ -63,12 +63,12 @@ export async function PUT(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, `estates/${id}`)
     }
 
     return NextResponse.json({ estate })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'estates/[id]')
   }
 }
 
@@ -100,11 +100,11 @@ export async function DELETE(
       .eq('company_id', companyId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, `estates/${id}`)
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'estates/[id]')
   }
 }

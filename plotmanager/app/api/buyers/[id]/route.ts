@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 
@@ -25,8 +25,8 @@ export async function GET(
     }
 
     return NextResponse.json({ buyer })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'buyers/[id]')
   }
 }
 
@@ -88,7 +88,7 @@ export async function PUT(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'buyers/[id]')
     }
 
     const newEstateId = updateData.estate_id as string | undefined
@@ -164,8 +164,8 @@ export async function PUT(
     }
 
     return NextResponse.json({ buyer })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'buyers/[id]')
   }
 }
 
@@ -201,7 +201,7 @@ export async function DELETE(
       .eq('company_id', companyId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'buyers/[id]')
     }
 
     // Only increment available_plots if buyer had fully paid (plot was claimed)
@@ -216,7 +216,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'buyers/[id]')
   }
 }

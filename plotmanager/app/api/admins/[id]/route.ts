@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, requireSuperAdmin } from '@/lib/api-helpers'
+import { authenticateRequest, requireSuperAdmin, serverError } from '@/lib/api-helpers'
 
 export async function DELETE(
   _request: NextRequest,
@@ -40,7 +40,7 @@ export async function DELETE(
     await auth.adminClient.auth.admin.deleteUser(id)
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'DELETE /api/admins/[id]')
   }
 }

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/api-helpers'
+import { randomUUID } from 'crypto'
+import { authenticateRequest, serverError } from '@/lib/api-helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ALLOWED_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const ext = ALLOWED_TYPES[file.type]
+    if (!ext) {
       return NextResponse.json(
         { error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.' },
         { status: 400 }
@@ -31,8 +37,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ext = file.name.split('.').pop() || 'jpg'
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const fileName = `${randomUUID()}.${ext}`
     const filePath = `${result.auth.companyId}/${fileName}`
 
     const adminClient = createAdminClient()
@@ -46,7 +51,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 })
+      return serverError(uploadError, 'POST /api/upload')
     }
 
     const { data: { publicUrl } } = adminClient.storage
@@ -54,7 +59,7 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(filePath)
 
     return NextResponse.json({ url: publicUrl })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'POST /api/upload')
   }
 }

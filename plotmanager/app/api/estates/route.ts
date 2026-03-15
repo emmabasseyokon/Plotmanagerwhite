@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { estateSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
@@ -23,20 +23,23 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(
-        `name.ilike.%${search}%,location.ilike.%${search}%`
-      )
+      const safe = sanitizeSearch(search)
+      if (safe) {
+        query = query.or(
+          `name.ilike.%${safe}%,location.ilike.%${safe}%`
+        )
+      }
     }
 
     const { data: estates, error } = await query
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'GET /api/estates')
     }
 
     return NextResponse.json({ estates })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'GET /api/estates')
   }
 }
 
@@ -57,11 +60,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'POST /api/estates')
     }
 
     return NextResponse.json({ estate }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'POST /api/estates')
   }
 }

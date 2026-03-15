@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { reminderSchema } from '@/lib/validations'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { paymentReminderHtml } from '@/lib/email-templates'
@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     const { companyId, adminClient } = result.auth
 
     const url = new URL(request.url)
-    const page = parseInt(url.searchParams.get('page') || '1')
-    const limit = parseInt(url.searchParams.get('limit') || '50')
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1') || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50') || 50))
     const offset = (page - 1) * limit
 
     const { data: reminders, error, count } = await adminClient
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'GET /api/reminders')
     }
 
     return NextResponse.json({ reminders: reminders || [], total: count || 0 })
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
+      return serverError(insertError, 'POST /api/reminders')
     }
 
     return NextResponse.json({ reminder, emailSent, emailError }, { status: 201 })

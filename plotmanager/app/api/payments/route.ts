@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { paymentSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (paymentError) {
-      return NextResponse.json({ error: paymentError.message }, { status: 500 })
+      return serverError(paymentError, 'POST /api/payments')
     }
 
     // Update buyer's amount_paid and payment_status
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       .eq('company_id', companyId)
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return serverError(updateError, 'POST /api/payments')
     }
 
     // Decrement available_plots when buyer transitions to fully_paid
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ payment, newAmountPaid, newPaymentStatus }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'POST /api/payments')
   }
 }

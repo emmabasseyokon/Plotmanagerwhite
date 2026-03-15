@@ -1,14 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { APP_COMPANY_ID } from '@/lib/config'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  // Whitelist only safe internal paths to prevent open redirect
+  const SAFE_PATHS = ['/dashboard', '/dashboard/estates', '/dashboard/buyers', '/dashboard/reminders', '/dashboard/admins', '/dashboard/settings/form']
   const rawNext = requestUrl.searchParams.get('next') ?? '/dashboard'
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/dashboard'
+  const next = SAFE_PATHS.includes(rawNext) ? rawNext : '/dashboard'
 
   const errorDescription = requestUrl.searchParams.get('error_description')
   if (errorDescription) {
@@ -37,29 +37,9 @@ export async function GET(request: Request) {
       }
     )
 
-    const { error, data } = await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', data.user.id)
-          .single()
-
-        // Auto-create profile if it doesn't exist
-        if (!profile && APP_COMPANY_ID) {
-          const admin = createAdminClient()
-          await admin.from('profiles').upsert({
-            id: data.user.id,
-            email: data.user.email!,
-            full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Admin',
-            role: 'admin',
-            company_id: APP_COMPANY_ID,
-          })
-        }
-      }
-
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
 

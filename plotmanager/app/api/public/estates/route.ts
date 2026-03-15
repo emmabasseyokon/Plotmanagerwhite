@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { serverError } from '@/lib/api-helpers'
 import { APP_COMPANY_ID } from '@/lib/config'
 
 export async function GET() {
@@ -18,11 +19,11 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'GET /api/public/estates')
     }
 
     return NextResponse.json({ estates: estates || [] })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'GET /api/public/estates')
   }
 }

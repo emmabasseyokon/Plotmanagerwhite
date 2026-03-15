@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/api-helpers'
+import { authenticateRequest, serverError } from '@/lib/api-helpers'
 
 export async function PUT(
   request: NextRequest,
@@ -37,11 +37,11 @@ export async function PUT(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'PUT /api/payment-schedules/[id]')
     }
 
     return NextResponse.json({ entry })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'PUT /api/payment-schedules/[id]')
   }
 }

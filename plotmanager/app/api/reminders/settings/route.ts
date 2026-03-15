@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, requireSuperAdmin, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, requireSuperAdmin, validationError, serverError } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 const settingsSchema = z.object({
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', auth.companyId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'PUT /api/reminders/settings')
     }
 
     return NextResponse.json({ success: true })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/api-helpers'
+import { authenticateRequest, serverError } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       .order('installment_number', { ascending: true })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'GET /api/payment-schedules')
     }
 
     // Mark overdue entries on read
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ entries: updatedEntries })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'GET /api/payment-schedules')
   }
 }

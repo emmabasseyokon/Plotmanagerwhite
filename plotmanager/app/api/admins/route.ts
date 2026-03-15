@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, requireSuperAdmin, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, requireSuperAdmin, validationError, serverError } from '@/lib/api-helpers'
 import { createAdminSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'POST /api/admins')
   }
 }

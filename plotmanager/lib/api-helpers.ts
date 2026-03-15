@@ -64,3 +64,20 @@ export function validationError(zodError: ZodError): NextResponse {
     { status: 400 }
   )
 }
+
+/**
+ * Log error server-side and return a generic message to the client.
+ */
+export function serverError(err: unknown, context?: string): NextResponse {
+  const message = err instanceof Error ? err.message : String(err)
+  console.error(`[ServerError]${context ? ` ${context}:` : ''}`, message)
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+}
+
+/**
+ * Sanitize a search string for use in Supabase .or() / .ilike() filters.
+ * Strips characters that could alter PostgREST filter syntax.
+ */
+export function sanitizeSearch(input: string): string {
+  return input.replace(/[%_\\(),.*]/g, '').trim().slice(0, 100)
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, validationError } from '@/lib/api-helpers'
+import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 
@@ -24,20 +24,23 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(
-        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`
-      )
+      const safe = sanitizeSearch(search)
+      if (safe) {
+        query = query.or(
+          `first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%`
+        )
+      }
     }
 
     const { data: buyers, error } = await query
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'GET /api/buyers')
     }
 
     return NextResponse.json({ buyers })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'GET /api/buyers')
   }
 }
 
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'POST /api/buyers')
     }
 
     // Decrement available_plots if buyer paid outright and has an estate
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ buyer }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return serverError(err, 'POST /api/buyers')
   }
 }

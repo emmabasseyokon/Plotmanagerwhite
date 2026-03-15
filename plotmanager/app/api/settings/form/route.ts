@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, requireSuperAdmin } from '@/lib/api-helpers'
+import { authenticateRequest, requireSuperAdmin, serverError } from '@/lib/api-helpers'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', auth.companyId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError(error, 'PUT /api/settings/form')
     }
 
     return NextResponse.json({ success: true, form_enabled })
