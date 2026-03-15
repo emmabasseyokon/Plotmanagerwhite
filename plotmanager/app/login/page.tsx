@@ -10,10 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -52,8 +50,9 @@ export default function LoginPage() {
           setAuthError(error.message)
         }
       } else {
-        router.push('/dashboard')
-        router.refresh()
+        // Full reload so the proxy picks up the new auth cookies
+        window.location.href = '/dashboard'
+        return
       }
     } catch (error: any) {
       setAuthError(error?.message || 'An unexpected error occurred. Please try again.')
