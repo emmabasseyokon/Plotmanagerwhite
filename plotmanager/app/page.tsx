@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { APP_COMPANY_ID, APP_NAME, APP_COMPANY_SLUG } from '@/lib/config'
-import { MapPin, Phone, Mail, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { MapPin, Phone, Mail, ArrowRight, CheckCircle2, Quote } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -130,9 +130,10 @@ export default async function LandingPage() {
                   : 0
 
                 return (
-                  <div
+                  <Link
                     key={estate.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-shadow group"
+                    href={`/estates/${estate.id}`}
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-shadow group block"
                   >
                     {/* Image */}
                     <div className="relative h-52 bg-gradient-to-br from-primary-100 to-primary-50 overflow-hidden">
@@ -203,17 +204,14 @@ export default async function LandingPage() {
                             {estate.price_per_plot ? formatPrice(estate.price_per_plot) : 'Contact us'}
                           </p>
                         </div>
-                        {!isSoldOut && company?.form_enabled && APP_COMPANY_SLUG && (
-                          <Link
-                            href={`/form/${APP_COMPANY_SLUG}`}
-                            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
-                          >
-                            Buy Now
-                          </Link>
+                        {!isSoldOut && (
+                          <span className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg">
+                            View Details
+                          </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -241,6 +239,50 @@ export default async function LandingPage() {
                 </div>
                 <h3 className="font-display text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Client Testimonials */}
+      <section className="py-16 sm:py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900">
+              Client Testimonials
+            </h2>
+            <p className="mt-3 text-gray-600 text-lg">
+              Hear from our satisfied clients
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[
+              {
+                name: 'Miss Sarah',
+                text: "I'm so happy to have bought a property from Elevation Point. They took care of me during the inspection and gave me my allocation in less than one month! I wasn't expecting so much, but they proved to be in for serious business. I recommend them to anyone who is starting their investment Journey.",
+              },
+              {
+                name: 'Mr. David',
+                text: "I got to know EPIS through a friend who bought from them. To be honest, at first, I was sceptical about the investment but I just took the risk, I went for the inspection and they treated me well. I eventually paid for the land after all my questions were answered and I have been allocated.",
+              },
+            ].map((testimonial) => (
+              <div
+                key={testimonial.name}
+                className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm"
+              >
+                <Quote className="w-8 h-8 text-primary-300 mb-4" />
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  &ldquo;{testimonial.text}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-700 font-bold text-sm">
+                      {testimonial.name.split(' ').pop()?.charAt(0)}
+                    </span>
+                  </div>
+                  <p className="font-display font-bold text-gray-900">{testimonial.name}</p>
+                </div>
               </div>
             ))}
           </div>
