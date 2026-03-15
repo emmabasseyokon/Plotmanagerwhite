@@ -16,9 +16,12 @@ const poppins = Poppins({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: 'PlotManager - Land Buyers Management',
-  description: 'Manage land buyers, track payments, and send reminders',
+export function generateMetadata(): Metadata {
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || 'PlotManager'
+  return {
+    title: `${appName} - Land Buyers Management`,
+    description: 'Manage land buyers, track payments, and send reminders',
+  }
 }
 
 export default function RootLayout({

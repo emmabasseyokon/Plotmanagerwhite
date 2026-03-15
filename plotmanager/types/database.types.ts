@@ -162,6 +162,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          image_url: string | null
           location: string | null
           name: string
           price_per_plot: number | null
@@ -175,6 +176,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           name: string
           price_per_plot?: number | null
@@ -188,6 +190,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           name?: string
           price_per_plot?: number | null

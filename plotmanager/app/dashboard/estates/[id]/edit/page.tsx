@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,17 +11,22 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, X, ImageIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function EditEstatePage() {
   const router = useRouter()
   const params = useParams()
   const estateId = params.id as string
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string>('')
 
   const {
     register,
@@ -46,11 +51,48 @@ export default function EditEstatePage() {
             price_per_plot: data.estate.price_per_plot || 0,
             status: data.estate.status || 'active',
           })
+          if (data.estate.image_url) {
+            setImagePreview(data.estate.image_url)
+            setImageUrl(data.estate.image_url)
+          }
         }
       })
       .catch(() => setServerError('Failed to load estate'))
       .finally(() => setIsLoading(false))
   }, [estateId, reset])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImagePreview(URL.createObjectURL(file))
+    setIsUploading(true)
+    setServerError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+
+      setImageUrl(data.url)
+    } catch (err: any) {
+      setServerError(err.message)
+      setImagePreview(null)
+      setImageUrl('')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const removeImage = () => {
+    setImagePreview(null)
+    setImageUrl('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const onSubmit = async (data: EstateFormData) => {
     setIsSubmitting(true)
@@ -60,7 +102,7 @@ export default function EditEstatePage() {
       const res = await fetch(`/api/estates/${estateId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, image_url: imageUrl || null }),
       })
 
       if (!res.ok) {
@@ -109,6 +151,53 @@ export default function EditEstatePage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Estate Image */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Estate Image</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            {imagePreview ? (
+              <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-gray-200">
+                <Image src={imagePreview} alt="Estate preview" fill className="object-cover" />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow hover:bg-white"
+                >
+                  <X className="w-4 h-4 text-gray-700" />
+                </button>
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="text-white text-sm font-medium">Uploading...</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary-400 hover:bg-primary-50/50 transition-colors"
+              >
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-gray-400" />
+                </div>
+                <div className="text-sm text-gray-500">
+                  <span className="text-primary-600 font-medium">Click to upload</span> an estate image
+                </div>
+                <p className="text-xs text-gray-400">JPEG, PNG, or WebP (max 5MB)</p>
+              </button>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Estate Details */}
         <Card>
           <CardHeader>
@@ -188,7 +277,7 @@ export default function EditEstatePage() {
           <Link href={`/dashboard/estates/${estateId}`}>
             <Button variant="outline" type="button">Cancel</Button>
           </Link>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button type="submit" isLoading={isSubmitting} disabled={isUploading}>
             Save Changes
           </Button>
         </div>

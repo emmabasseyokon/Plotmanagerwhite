@@ -59,6 +59,7 @@ export const estateSchema = z.object({
   available_plots: z.number().int().min(0, 'Must be 0 or greater'),
   price_per_plot: z.number().min(0, 'Must be 0 or greater'),
   status: z.enum(['active', 'sold_out', 'coming_soon']).default('active'),
+  image_url: z.string().url().optional().or(z.literal('')).or(z.literal(undefined)),
 })
 
 export const createAdminSchema = z.object({
