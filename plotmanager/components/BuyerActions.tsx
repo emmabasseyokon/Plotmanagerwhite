@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Pencil, Trash2, X } from 'lucide-react'
+import { showToast } from '@/components/ui/Toast'
 
 export function BuyerActions({ buyerId, buyerName }: { buyerId: string; buyerName: string }) {
   const router = useRouter()
@@ -21,7 +22,7 @@ export function BuyerActions({ buyerId, buyerName }: { buyerId: string; buyerNam
       router.push('/dashboard/buyers')
       router.refresh()
     } catch (err: any) {
-      alert(err.message)
+      showToast(err.message, 'error')
       setIsDeleting(false)
       setShowConfirm(false)
     }

@@ -1,42 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, requireSuperAdmin, validationError } from '@/lib/api-helpers'
 import { createAdminSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { auth } = result
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const forbidden = requireSuperAdmin(auth)
+    if (forbidden) return forbidden
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id, role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden: only super admins can create admins' }, { status: 403 })
-    }
-
-    const companyId = profile.company_id!
     const body = await request.json()
-
     const parsed = createAdminSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
-
-    const adminClient = createAdminClient()
+    if (!parsed.success) return validationError(parsed.error)
 
     // Create auth user (no email confirmation)
-    const { data: newAuthUser, error: authError } = await adminClient.auth.admin.createUser({
+    const { data: newAuthUser, error: authError } = await auth.adminClient.auth.admin.createUser({
       email: parsed.data.email,
       password: parsed.data.password,
       email_confirm: true,
@@ -48,18 +28,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Create profile
-    const { error: profileError } = await adminClient
+    const { error: profileError } = await auth.adminClient
       .from('profiles')
       .insert({
         id: newAuthUser.user.id,
         email: parsed.data.email,
         full_name: parsed.data.full_name,
         role: 'admin',
-        company_id: companyId,
+        company_id: auth.companyId,
       })
 
     if (profileError) {
-      await adminClient.auth.admin.deleteUser(newAuthUser.user.id)
+      await auth.adminClient.auth.admin.deleteUser(newAuthUser.user.id)
       return NextResponse.json({ error: 'Failed to create admin profile' }, { status: 500 })
     }
 

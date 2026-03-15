@@ -1,25 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, validationError } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
-
-async function getAuthenticatedCompanyId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return null
-
-  return profile.company_id!
-}
 
 export async function GET(
   request: NextRequest,
@@ -27,13 +9,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const companyId = await getAuthenticatedCompanyId()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const adminClient = createAdminClient()
     const { data: buyer, error } = await adminClient
       .from('buyers')
       .select('*')
@@ -57,23 +36,13 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const companyId = await getAuthenticatedCompanyId()
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
     const body = await request.json()
     const parsed = buyerSchema.partial().safeParse(body)
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
-
-    const adminClient = createAdminClient()
+    if (!parsed.success) return validationError(parsed.error)
 
     // Get existing buyer with estate info
     const { data: existing } = await adminClient
@@ -206,13 +175,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const companyId = await getAuthenticatedCompanyId()
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const adminClient = createAdminClient()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
     // Get buyer with estate and payment info before deleting
     const { data: existing } = await adminClient

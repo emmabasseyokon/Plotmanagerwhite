@@ -4,10 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
 import { Modal } from '@/components/ui/Modal'
 import { CreditCard } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 interface RecordPaymentProps {
   buyerId: string
@@ -91,13 +90,13 @@ export function RecordPayment({ buyerId, outstandingBalance, nextInstallment }: 
 
           {nextInstallment && installmentRemaining > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-              Installment #{nextInstallment.installment_number} due {nextInstallment.due_date} — <span className="font-semibold">₦{installmentRemaining.toLocaleString()}</span> remaining
+              Installment #{nextInstallment.installment_number} due {nextInstallment.due_date} — <span className="font-semibold">{formatCurrency(installmentRemaining)}</span> remaining
             </div>
           )}
 
           {outstandingBalance > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
-              Outstanding balance: <span className="font-semibold">₦{outstandingBalance.toLocaleString()}</span>
+              Outstanding balance: <span className="font-semibold">{formatCurrency(outstandingBalance)}</span>
             </div>
           )}
 

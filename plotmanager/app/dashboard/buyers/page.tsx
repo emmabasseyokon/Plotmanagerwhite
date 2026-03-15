@@ -5,18 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Plus, Search, Users } from 'lucide-react'
-
-const statusColors: Record<string, string> = {
-  fully_paid: 'bg-green-100 text-green-700',
-  installment: 'bg-blue-100 text-blue-700',
-  overdue: 'bg-red-100 text-red-700',
-}
-
-const statusLabels: Record<string, string> = {
-  fully_paid: 'Fully Paid',
-  installment: 'Installment',
-  overdue: 'Overdue',
-}
+import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS } from '@/lib/constants'
 
 export default async function BuyersPage({
   searchParams,
@@ -118,7 +107,7 @@ export default async function BuyersPage({
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {status === 'all' ? 'All' : statusLabels[status]}
+                    {status === 'all' ? 'All' : BUYER_STATUS_LABELS[status]}
                   </button>
                 </Link>
               ))}
@@ -157,8 +146,8 @@ export default async function BuyersPage({
                         {buyer.plot_number && <span className="text-gray-400"> (Plot {buyer.plot_number})</span>}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusColors[buyer.payment_status] || statusColors.installment}`}>
-                          {statusLabels[buyer.payment_status] || 'Installment'}
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                          {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-gray-900">
@@ -185,8 +174,8 @@ export default async function BuyersPage({
                     <p className="font-medium text-gray-900">
                       {buyer.first_name} {buyer.last_name}
                     </p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[buyer.payment_status] || statusColors.pending}`}>
-                      {statusLabels[buyer.payment_status] || 'Pending'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.pending}`}>
+                      {BUYER_STATUS_LABELS[buyer.payment_status] || 'Pending'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mb-2">

@@ -1,43 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, requireSuperAdmin } from '@/lib/api-helpers'
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { auth } = result
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id, role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const forbidden = requireSuperAdmin(auth)
+    if (forbidden) return forbidden
 
     // Prevent self-deletion
-    if (id === user.id) {
+    if (id === auth.userId) {
       return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 })
     }
 
-    const adminClient = createAdminClient()
-
     // Verify target belongs to same company and is not a super_admin
-    const { data: targetProfile } = await adminClient
+    const { data: targetProfile } = await auth.adminClient
       .from('profiles')
       .select('id, role, company_id')
       .eq('id', id)
-      .eq('company_id', profile.company_id!)
+      .eq('company_id', auth.companyId)
       .single()
 
     if (!targetProfile) {
@@ -49,12 +36,8 @@ export async function DELETE(
     }
 
     // Delete profile then auth user
-    await adminClient
-      .from('profiles')
-      .delete()
-      .eq('id', id)
-
-    await adminClient.auth.admin.deleteUser(id)
+    await auth.adminClient.from('profiles').delete().eq('id', id)
+    await auth.adminClient.auth.admin.deleteUser(id)
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, validationError } from '@/lib/api-helpers'
 import { reminderSchema } from '@/lib/validations'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { paymentReminderHtml } from '@/lib/email-templates'
@@ -8,25 +7,9 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const companyId = profile.company_id!
-    const adminClient = createAdminClient()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
     const url = new URL(request.url)
     const page = parseInt(url.searchParams.get('page') || '1')
@@ -52,34 +35,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const companyId = profile.company_id!
-    const adminClient = createAdminClient()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { userId, companyId, adminClient } = result.auth
 
     const body = await request.json()
     const parsed = reminderSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
+    if (!parsed.success) return validationError(parsed.error)
 
     // Verify buyer belongs to company
     const { data: buyer } = await adminClient
@@ -139,7 +101,7 @@ export async function POST(request: NextRequest) {
         message: parsed.data.message,
         sent_via: 'email',
         sent_at: new Date().toISOString(),
-        sent_by: user.id,
+        sent_by: userId,
       })
       .select()
       .single()

@@ -19,25 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { BuyerActions } from '@/components/BuyerActions'
 import { RecordPayment } from '@/components/RecordPayment'
 import { ScheduleReminder } from '@/components/ScheduleReminder'
-
-const statusColors: Record<string, string> = {
-  fully_paid: 'bg-green-100 text-green-700',
-  installment: 'bg-blue-100 text-blue-700',
-  overdue: 'bg-red-100 text-red-700',
-}
-
-const statusLabels: Record<string, string> = {
-  fully_paid: 'Fully Paid',
-  installment: 'Installment',
-  overdue: 'Overdue',
-}
-
-const methodLabels: Record<string, string> = {
-  cash: 'Cash',
-  bank_transfer: 'Bank Transfer',
-  pos: 'POS',
-  online: 'Online',
-}
+import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS, SCHEDULE_STATUS_COLORS, SCHEDULE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/lib/constants'
 
 export default async function BuyerDetailPage({
   params,
@@ -164,8 +146,8 @@ export default async function BuyerDetailPage({
             <h1 className="font-display text-3xl font-bold text-gray-900">
               {buyer.first_name} {buyer.last_name}
             </h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[buyer.payment_status] || statusColors.installment}`}>
-              {statusLabels[buyer.payment_status] || 'Installment'}
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+              {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
             </span>
           </div>
           <p className="text-gray-500 mt-1">
@@ -386,12 +368,6 @@ export default async function BuyerDetailPage({
                         : entry.status === 'partial'
                           ? 'bg-yellow-50/50'
                           : ''
-                    const scheduleStatusColors: Record<string, string> = {
-                      paid: 'bg-green-100 text-green-700',
-                      partial: 'bg-yellow-100 text-yellow-700',
-                      overdue: 'bg-red-100 text-red-700',
-                      pending: 'bg-gray-100 text-gray-700',
-                    }
                     const isNext = nextInstallment?.id === entry.id
                     return (
                       <tr key={entry.id} className={`${rowBg} ${isNext ? 'ring-2 ring-blue-200 ring-inset' : ''}`}>
@@ -400,8 +376,8 @@ export default async function BuyerDetailPage({
                         <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(entry.expected_amount)}</td>
                         <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(entry.paid_amount)}</td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${scheduleStatusColors[entry.status] || scheduleStatusColors.pending}`}>
-                            {entry.status === 'paid' ? 'Paid' : entry.status === 'partial' ? 'Partial' : entry.status === 'overdue' ? 'Overdue' : 'Pending'}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${SCHEDULE_STATUS_COLORS[entry.status] || SCHEDULE_STATUS_COLORS.pending}`}>
+                            {SCHEDULE_STATUS_LABELS[entry.status] || 'Pending'}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">
@@ -461,7 +437,7 @@ export default async function BuyerDetailPage({
                         {formatCurrency(payment.amount)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {formatDate(payment.payment_date)} via {methodLabels[payment.payment_method] || payment.payment_method}
+                        {formatDate(payment.payment_date)} via {PAYMENT_METHOD_LABELS[payment.payment_method] || payment.payment_method}
                       </p>
                     </div>
                   </div>

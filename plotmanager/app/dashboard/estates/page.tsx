@@ -5,18 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Plus, Search, Building } from 'lucide-react'
-
-const statusColors: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  sold_out: 'bg-red-100 text-red-700',
-  coming_soon: 'bg-amber-100 text-amber-700',
-}
-
-const statusLabels: Record<string, string> = {
-  active: 'Active',
-  sold_out: 'Sold Out',
-  coming_soon: 'Coming Soon',
-}
+import { ESTATE_STATUS_COLORS, ESTATE_STATUS_LABELS } from '@/lib/constants'
 
 export default async function EstatesPage({
   searchParams,
@@ -115,7 +104,7 @@ export default async function EstatesPage({
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {status === 'all' ? 'All' : statusLabels[status]}
+                    {status === 'all' ? 'All' : ESTATE_STATUS_LABELS[status]}
                   </button>
                 </Link>
               ))}
@@ -159,8 +148,8 @@ export default async function EstatesPage({
                         {formatCurrency(estate.price_per_plot || 0)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusColors[estate.status] || statusColors.active}`}>
-                          {statusLabels[estate.status] || 'Active'}
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${ESTATE_STATUS_COLORS[estate.status] || ESTATE_STATUS_COLORS.active}`}>
+                          {ESTATE_STATUS_LABELS[estate.status] || 'Active'}
                         </span>
                       </td>
                     </tr>
@@ -179,8 +168,8 @@ export default async function EstatesPage({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium text-gray-900">{estate.name}</p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[estate.status] || statusColors.active}`}>
-                      {statusLabels[estate.status] || 'Active'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${ESTATE_STATUS_COLORS[estate.status] || ESTATE_STATUS_COLORS.active}`}>
+                      {ESTATE_STATUS_LABELS[estate.status] || 'Active'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mb-2">{estate.location || 'No location'}</p>

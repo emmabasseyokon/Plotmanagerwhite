@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, requireSuperAdmin, validationError } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 const settingsSchema = z.object({
@@ -10,28 +9,14 @@ const settingsSchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const adminClient = createAdminClient()
     const { data: company } = await adminClient
       .from('companies')
       .select('auto_reminders_enabled, reminder_days_before')
-      .eq('id', profile.company_id!)
+      .eq('id', companyId)
       .single()
 
     return NextResponse.json({
@@ -45,44 +30,24 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { auth } = result
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id, role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    if (profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Only super admins can change reminder settings' }, { status: 403 })
-    }
+    const forbidden = requireSuperAdmin(auth)
+    if (forbidden) return forbidden
 
     const body = await request.json()
     const parsed = settingsSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
+    if (!parsed.success) return validationError(parsed.error)
 
-    const adminClient = createAdminClient()
-    const { error } = await adminClient
+    const { error } = await auth.adminClient
       .from('companies')
       .update({
         auto_reminders_enabled: parsed.data.auto_reminders_enabled,
         reminder_days_before: parsed.data.reminder_days_before,
       } as any)
-      .eq('id', profile.company_id!)
+      .eq('id', auth.companyId)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

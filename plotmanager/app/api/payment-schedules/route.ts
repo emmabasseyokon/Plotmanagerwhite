@@ -1,28 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const companyId = profile.company_id!
-    const adminClient = createAdminClient()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
     const buyerId = request.nextUrl.searchParams.get('buyer_id')
     if (!buyerId) {

@@ -17,22 +17,6 @@ export const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 })
 
-export const signupSchema = z.object({
-  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8, 'Please confirm your password'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-})
-
-export const companySchema = z.object({
-  name: z.string().min(2, 'Company name must be at least 2 characters'),
-  slug: z.string().min(2, 'Slug must be at least 2 characters').regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
-  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-})
 
 export const adminSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -121,8 +105,6 @@ export type BroadcastFormData = z.infer<typeof broadcastSchema>
 export type LoginFormData = z.infer<typeof loginSchema>
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
-export type SignupFormData = z.infer<typeof signupSchema>
-export type CompanyFormData = z.infer<typeof companySchema>
 export type AdminFormData = z.infer<typeof adminSchema>
 export type BuyerFormData = z.infer<typeof buyerSchema>
 export type EstateFormData = z.infer<typeof estateSchema>

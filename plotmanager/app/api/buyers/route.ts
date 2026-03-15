@@ -1,30 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { authenticateRequest, validationError } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const companyId = profile.company_id!
-    const adminClient = createAdminClient()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status')
@@ -60,35 +43,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const result = await authenticateRequest()
+    if (result.error) return result.error
+    const { companyId, adminClient } = result.auth
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const companyId = profile.company_id!
     const body = await request.json()
-
     const parsed = buyerSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
-    }
+    if (!parsed.success) return validationError(parsed.error)
 
-    const adminClient = createAdminClient()
     const { installment_plan, ...buyerFields } = parsed.data
     const insertData: any = { ...buyerFields, company_id: companyId }
     if (!insertData.estate_id) delete insertData.estate_id

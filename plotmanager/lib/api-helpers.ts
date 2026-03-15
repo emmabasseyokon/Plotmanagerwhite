@@ -1,0 +1,66 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { ZodError } from 'zod'
+
+export interface AuthResult {
+  userId: string
+  companyId: string
+  role: 'super_admin' | 'admin'
+  adminClient: ReturnType<typeof createAdminClient>
+}
+
+/**
+ * Authenticate the request and return user info + company-scoped admin client.
+ * Returns null if unauthorized — caller should return the error response.
+ */
+export async function authenticateRequest(): Promise<
+  | { auth: AuthResult; error?: never }
+  | { auth?: never; error: NextResponse }
+> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.company_id) {
+    return { error: NextResponse.json({ error: 'Profile not found' }, { status: 404 }) }
+  }
+
+  return {
+    auth: {
+      userId: user.id,
+      companyId: profile.company_id,
+      role: profile.role as 'super_admin' | 'admin',
+      adminClient: createAdminClient(),
+    },
+  }
+}
+
+/**
+ * Require super_admin role. Returns a 403 response if not authorized.
+ */
+export function requireSuperAdmin(auth: AuthResult): NextResponse | null {
+  if (auth.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Forbidden: super admin access required' }, { status: 403 })
+  }
+  return null
+}
+
+/**
+ * Return a standardized validation error response from a Zod error.
+ */
+export function validationError(zodError: ZodError): NextResponse {
+  return NextResponse.json(
+    { error: 'Validation failed', details: zodError.flatten().fieldErrors },
+    { status: 400 }
+  )
+}
