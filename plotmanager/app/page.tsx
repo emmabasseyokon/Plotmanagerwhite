@@ -90,7 +90,7 @@ export default async function LandingPage() {
                   href={`/form/${APP_COMPANY_SLUG}`}
                   className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 bg-white text-primary-700 font-semibold rounded-xl border-2 border-primary-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
                 >
-                  Register Interest
+                  Secure a Plot
                 </Link>
               )}
             </div>

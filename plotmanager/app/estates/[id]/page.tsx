@@ -163,7 +163,7 @@ export default async function EstateDetailPage({ params }: EstateDetailProps) {
                 href={`/form/${APP_COMPANY_SLUG}`}
                 className="w-full inline-flex items-center justify-center px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 text-lg"
               >
-                Register Interest
+                Secure a Plot
               </Link>
             )}
 
