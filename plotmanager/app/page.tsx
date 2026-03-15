@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createAdminClient } from '@/lib/supabase/admin'
 import { APP_COMPANY_ID, APP_NAME, APP_COMPANY_SLUG } from '@/lib/config'
 import { MapPin, Phone, Mail, ArrowRight, CheckCircle2 } from 'lucide-react'
