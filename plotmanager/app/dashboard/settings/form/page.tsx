@@ -28,8 +28,8 @@ export default async function FormSettingsPage() {
     .eq('id', companyId)
     .single()
 
-  const slug = (company as any)?.slug || ''
-  const formEnabled = (company as any)?.form_enabled ?? false
+  const slug = company?.slug || ''
+  const formEnabled = company?.form_enabled ?? false
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://plotmanager.com'
   const formUrl = `${baseUrl}/form/${slug}`

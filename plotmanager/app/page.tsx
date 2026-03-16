@@ -29,10 +29,23 @@ export default async function LandingPage() {
   // Fetch estates (active + sold_out)
   const { data: estates } = await adminClient
     .from('estates')
-    .select('id, name, location, description, total_plots, available_plots, price_per_plot, status, image_url')
+    .select('id, name, location, description, total_plots, available_plots, price_per_plot, status, image_url, plot_sizes')
     .eq('company_id', APP_COMPANY_ID)
     .in('status', ['active', 'sold_out'])
     .order('created_at', { ascending: false })
+
+  interface Estate {
+    id: string
+    name: string
+    location: string | null
+    description: string | null
+    total_plots: number
+    available_plots: number
+    price_per_plot: number | null
+    status: string
+    image_url: string | null
+    plot_sizes: Array<{ size: string; price: number; is_default?: boolean }> | null
+  }
 
   const companyName = company?.name || APP_NAME
 
@@ -98,7 +111,7 @@ export default async function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {estates.map((estate: any) => {
+              {(estates as Estate[]).map((estate) => {
                 const isSoldOut = estate.status === 'sold_out' || estate.available_plots === 0
                 const soldPercentage = estate.total_plots > 0
                   ? Math.round(((estate.total_plots - estate.available_plots) / estate.total_plots) * 100)
@@ -175,7 +188,7 @@ export default async function LandingPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-gray-500">
-                            {(estate as any).plot_sizes?.length > 1 ? 'Starting from' : 'Price per plot'}
+                            {estate.plot_sizes && estate.plot_sizes.length > 1 ? 'Starting from' : 'Price per plot'}
                           </p>
                           <p className="text-lg font-bold text-gray-900">
                             {estate.price_per_plot ? formatPrice(estate.price_per_plot) : 'Contact us'}

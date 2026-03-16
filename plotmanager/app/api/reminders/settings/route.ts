@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, requireSuperAdmin, validationError, serverError } from '@/lib/api-helpers'
 import { z } from 'zod'
+import type { TablesUpdate } from '@/types/database.types'
 
 const settingsSchema = z.object({
   auto_reminders_enabled: z.boolean(),
@@ -20,8 +21,8 @@ export async function GET() {
       .single()
 
     return NextResponse.json({
-      auto_reminders_enabled: (company as any)?.auto_reminders_enabled ?? false,
-      reminder_days_before: (company as any)?.reminder_days_before ?? 3,
+      auto_reminders_enabled: company?.auto_reminders_enabled ?? false,
+      reminder_days_before: company?.reminder_days_before ?? 3,
     })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -41,12 +42,14 @@ export async function PUT(request: NextRequest) {
     const parsed = settingsSchema.safeParse(body)
     if (!parsed.success) return validationError(parsed.error)
 
+    const updateData: TablesUpdate<'companies'> = {
+      auto_reminders_enabled: parsed.data.auto_reminders_enabled,
+      reminder_days_before: parsed.data.reminder_days_before,
+    }
+
     const { error } = await auth.adminClient
       .from('companies')
-      .update({
-        auto_reminders_enabled: parsed.data.auto_reminders_enabled,
-        reminder_days_before: parsed.data.reminder_days_before,
-      } as any)
+      .update(updateData)
       .eq('id', auth.companyId)
 
     if (error) {

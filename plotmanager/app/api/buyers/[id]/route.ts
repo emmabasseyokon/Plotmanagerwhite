@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import type { TablesUpdate } from '@/types/database.types'
 
 export async function GET(
   request: NextRequest,
@@ -56,14 +57,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
     }
 
-    const oldEstateId = (existing as any).estate_id as string | null
+    const oldEstateId = existing.estate_id
     const { installment_plan, ...updateFields } = parsed.data
-    const updateData: any = { ...updateFields }
+    const updateData: TablesUpdate<'buyers'> = { ...updateFields }
     if (updateData.estate_id === '') delete updateData.estate_id
 
     // Convert empty strings to null for DB compatibility
     for (const key of Object.keys(updateData)) {
-      if (updateData[key] === '') updateData[key] = null
+      const k = key as keyof typeof updateData
+      if (updateData[k] === '') (updateData[k] as unknown) = null
     }
 
     // Handle installment plan changes
@@ -96,14 +98,14 @@ export async function PUT(
     const { data: fullBuyer } = await adminClient
       .from('buyers').select('payment_status').eq('id', id).eq('company_id', companyId).single()
 
-    if (newEstateId !== undefined && newEstateId !== oldEstateId && fullBuyer && (fullBuyer as any).payment_status === 'fully_paid') {
+    if (newEstateId !== undefined && newEstateId !== oldEstateId && fullBuyer && fullBuyer.payment_status === 'fully_paid') {
       // Increment old estate (plot freed up)
       if (oldEstateId) {
         const { data: oldEstate } = await adminClient
           .from('estates').select('available_plots, total_plots').eq('id', oldEstateId).single()
-        if (oldEstate && (oldEstate as any).available_plots < (oldEstate as any).total_plots) {
+        if (oldEstate && oldEstate.available_plots < oldEstate.total_plots) {
           await adminClient.from('estates')
-            .update({ available_plots: (oldEstate as any).available_plots + 1 })
+            .update({ available_plots: oldEstate.available_plots + 1 })
             .eq('id', oldEstateId)
         }
       }
@@ -111,9 +113,9 @@ export async function PUT(
       if (newEstateId) {
         const { data: newEstate } = await adminClient
           .from('estates').select('available_plots').eq('id', newEstateId).single()
-        if (newEstate && (newEstate as any).available_plots > 0) {
+        if (newEstate && newEstate.available_plots > 0) {
           await adminClient.from('estates')
-            .update({ available_plots: (newEstate as any).available_plots - 1 })
+            .update({ available_plots: newEstate.available_plots - 1 })
             .eq('id', newEstateId)
         }
       }
@@ -121,7 +123,7 @@ export async function PUT(
 
     // Regenerate schedule if plan params changed
     if (installment_plan?.enabled && installment_plan.duration_months && installment_plan.start_date && buyer) {
-      const totalAmount = (updateFields.total_amount ?? (buyer as any).total_amount) as number
+      const totalAmount = updateFields.total_amount ?? buyer.total_amount
 
       // Delete only pending entries (preserve paid/partial)
       await adminClient
@@ -145,7 +147,7 @@ export async function PUT(
         .eq('buyer_id', id)
         .eq('company_id', companyId)
 
-      const existingNumbers = new Set((existingEntries || []).map((e: any) => e.installment_number))
+      const existingNumbers = new Set((existingEntries || []).map((e) => e.installment_number))
 
       const newEntries = schedule
         .filter((entry) => !existingNumbers.has(entry.installment_number))
@@ -190,8 +192,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
     }
 
-    const estateId = (existing as any).estate_id as string | null
-    const wasFullyPaid = (existing as any).payment_status === 'fully_paid'
+    const estateId = existing.estate_id
+    const wasFullyPaid = existing.payment_status === 'fully_paid'
 
     const { error } = await adminClient
       .from('buyers')
@@ -207,9 +209,9 @@ export async function DELETE(
     if (estateId && wasFullyPaid) {
       const { data: estate } = await adminClient
         .from('estates').select('available_plots, total_plots').eq('id', estateId).single()
-      if (estate && (estate as any).available_plots < (estate as any).total_plots) {
+      if (estate && estate.available_plots < estate.total_plots) {
         await adminClient.from('estates')
-          .update({ available_plots: (estate as any).available_plots + 1 })
+          .update({ available_plots: estate.available_plots + 1 })
           .eq('id', estateId)
       }
     }

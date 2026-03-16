@@ -29,7 +29,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
     )
   }
 
-  if (!(company as any).form_enabled) {
+  if (!company.form_enabled) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
         <div className="text-center">
@@ -49,11 +49,11 @@ export default async function PublicFormPage({ params }: FormPageProps) {
     .gt('available_plots', 0)
     .order('name')
 
-  const estates = (estatesRaw || []).map((e: any) => ({
-    id: e.id as string,
-    name: e.name as string,
-    location: (e.location || '') as string,
-    price_per_plot: (e.price_per_plot || 0) as number,
+  const estates = (estatesRaw || []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    location: e.location || '',
+    price_per_plot: e.price_per_plot || 0,
     plot_sizes: (e.plot_sizes || []) as Array<{ size: string; price: number }>,
   }))
 

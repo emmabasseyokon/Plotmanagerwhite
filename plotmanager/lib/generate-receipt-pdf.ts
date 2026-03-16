@@ -1,5 +1,9 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+
+interface jsPDFWithAutoTable extends jsPDF {
+  lastAutoTable: { finalY: number }
+}
 import { formatCurrency, formatDate } from './utils'
 import { PAYMENT_METHOD_LABELS } from './constants'
 import { getThemeColorRgb } from './theme'
@@ -164,7 +168,7 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
   })
 
   // --- Payment Summary Table ---
-  const summaryY = (doc as any).lastAutoTable.finalY + 10
+  const summaryY = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 10
 
   autoTable(doc, {
     startY: summaryY,
@@ -196,7 +200,7 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
   })
 
   // --- Footer ---
-  const footerY = (doc as any).lastAutoTable.finalY + 20
+  const footerY = (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 20
   doc.setFontSize(9)
   doc.setTextColor(140, 140, 140)
   doc.setFont('helvetica', 'italic')

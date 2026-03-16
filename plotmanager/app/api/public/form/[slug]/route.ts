@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicBuyerFormSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import type { TablesInsert } from '@/types/database.types'
+
+type PlotSizeEntry = { size: string; price: number; is_default?: boolean }
 
 async function getCompanyBySlug(slug: string) {
   const adminClient = createAdminClient()
@@ -27,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    if (!(company as any).form_enabled) {
+    if (!company.form_enabled) {
       return NextResponse.json({ error: 'Form is not enabled' }, { status: 403 })
     }
 
@@ -43,7 +46,7 @@ export async function GET(
 
     return NextResponse.json({
       company: { name: company.name, slug: company.slug },
-      estates: (estates || []).map((e: any) => ({
+      estates: (estates || []).map((e) => ({
         id: e.id,
         name: e.name,
         location: e.location,
@@ -68,7 +71,7 @@ export async function POST(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    if (!(company as any).form_enabled) {
+    if (!company.form_enabled) {
       return NextResponse.json({ error: 'Form is not available' }, { status: 403 })
     }
 
@@ -96,7 +99,7 @@ export async function POST(
       return NextResponse.json({ error: 'Estate not found' }, { status: 404 })
     }
 
-    if ((estate as any).available_plots < (data.number_of_plots || 1)) {
+    if (estate.available_plots < (data.number_of_plots || 1)) {
       return NextResponse.json({ error: 'Not enough available plots in this estate' }, { status: 400 })
     }
 
@@ -119,10 +122,10 @@ export async function POST(
     }
 
     // Calculate total amount — use plot_sizes price if buyer selected a specific size
-    let pricePerPlot = (estate as any).price_per_plot || 0
-    const plotSizes = (estate as any).plot_sizes || []
+    let pricePerPlot = estate.price_per_plot || 0
+    const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
     if (data.plot_size && plotSizes.length > 0) {
-      const matchedSize = plotSizes.find((ps: any) => ps.size === data.plot_size)
+      const matchedSize = plotSizes.find((ps) => ps.size === data.plot_size)
       if (matchedSize) {
         pricePerPlot = matchedSize.price
       }
@@ -134,7 +137,7 @@ export async function POST(
     const isOutright = data.payment_type === 'outright'
     const initialDeposit = data.initial_deposit || 0
 
-    const insertData: any = {
+    const insertData: TablesInsert<'buyers'> = {
       company_id: company.id,
       first_name: data.first_name,
       last_name: data.last_name,
@@ -145,7 +148,7 @@ export async function POST(
       city: data.city || null,
       state: data.state || null,
       estate_id: data.estate_id,
-      plot_location: (estate as any).location || null,
+      plot_location: estate.location || null,
       plot_size: data.plot_size || null,
       number_of_plots: numberOfPlots,
       purchase_date: data.purchase_date || today,
@@ -171,7 +174,7 @@ export async function POST(
     }
 
     // Convert empty dates to null
-    const dateFields = ['purchase_date', 'next_payment_date', 'plan_start_date']
+    const dateFields = ['purchase_date', 'next_payment_date', 'plan_start_date'] as const
     for (const field of dateFields) {
       if (insertData[field] === '') insertData[field] = null
     }
@@ -187,11 +190,11 @@ export async function POST(
     }
 
     // Auto-create payment record for initial amount paid (outright or initial deposit)
-    if (buyer && insertData.amount_paid > 0) {
+    if (buyer && (insertData.amount_paid ?? 0) > 0) {
       await adminClient.from('payments').insert({
         company_id: company.id,
-        buyer_id: (buyer as any).id,
-        amount: insertData.amount_paid,
+        buyer_id: buyer.id,
+        amount: insertData.amount_paid ?? 0,
         payment_date: insertData.purchase_date || today,
         payment_method: 'bank_transfer',
         reference: null,
@@ -201,7 +204,7 @@ export async function POST(
 
     // Decrement plots if outright
     if (isOutright) {
-      const newAvailable = Math.max(0, (estate as any).available_plots - numberOfPlots)
+      const newAvailable = Math.max(0, estate.available_plots - numberOfPlots)
       await adminClient
         .from('estates')
         .update({ available_plots: newAvailable })
@@ -218,7 +221,7 @@ export async function POST(
       })
 
       const scheduleEntries = schedule.map((entry) => ({
-        buyer_id: (buyer as any).id,
+        buyer_id: buyer.id,
         company_id: company.id,
         installment_number: entry.installment_number,
         due_date: entry.due_date,

@@ -70,8 +70,8 @@ export default async function RemindersPage() {
     .eq('id', companyId)
     .single()
 
-  const autoRemindersEnabled = (companySettings as any)?.auto_reminders_enabled ?? false
-  const reminderDaysBefore = (companySettings as any)?.reminder_days_before ?? 3
+  const autoRemindersEnabled = companySettings?.auto_reminders_enabled ?? false
+  const reminderDaysBefore = companySettings?.reminder_days_before ?? 3
 
   return (
     <div className="space-y-6">

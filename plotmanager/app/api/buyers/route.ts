@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import type { TablesInsert } from '@/types/database.types'
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,12 +56,13 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return validationError(parsed.error)
 
     const { installment_plan, ...buyerFields } = parsed.data
-    const insertData: any = { ...buyerFields, company_id: companyId }
+    const insertData: Partial<TablesInsert<'buyers'>> & { company_id: string } = { ...buyerFields, company_id: companyId }
     if (!insertData.estate_id) delete insertData.estate_id
 
     // Convert empty strings to null for DB compatibility
     for (const key of Object.keys(insertData)) {
-      if (insertData[key] === '') insertData[key] = null
+      const k = key as keyof typeof insertData
+      if (insertData[k] === '') (insertData[k] as unknown) = null
     }
 
     // Add installment plan metadata to buyer if enabled
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const { data: buyer, error } = await adminClient
       .from('buyers')
-      .insert(insertData)
+      .insert(insertData as TablesInsert<'buyers'>)
       .select()
       .single()
 
@@ -89,20 +91,20 @@ export async function POST(request: NextRequest) {
         .select('available_plots')
         .eq('id', insertData.estate_id)
         .single()
-      if (estate && (estate as any).available_plots > 0) {
+      if (estate && estate.available_plots > 0) {
         await adminClient
           .from('estates')
-          .update({ available_plots: (estate as any).available_plots - 1 })
+          .update({ available_plots: estate.available_plots - 1 })
           .eq('id', insertData.estate_id)
       }
     }
 
     // Auto-create payment record for initial amount paid (outright or initial deposit)
-    if (buyer && insertData.amount_paid > 0) {
+    if (buyer && insertData.amount_paid && insertData.amount_paid > 0) {
       const today = new Date().toISOString().split('T')[0]
       await adminClient.from('payments').insert({
         company_id: companyId,
-        buyer_id: (buyer as any).id,
+        buyer_id: buyer.id,
         amount: insertData.amount_paid,
         payment_date: insertData.purchase_date || today,
         payment_method: 'bank_transfer',
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
       })
 
       const scheduleEntries = schedule.map((entry) => ({
-        buyer_id: (buyer as any).id,
+        buyer_id: buyer.id,
         company_id: companyId,
         installment_number: entry.installment_number,
         due_date: entry.due_date,

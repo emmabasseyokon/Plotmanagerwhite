@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { paymentSchema } from '@/lib/validations'
+import type { Tables } from '@/types/database.types'
+
+type BuyerPaymentInfo = Pick<Tables<'buyers'>, 'id' | 'total_amount' | 'amount_paid' | 'payment_status' | 'estate_id'>
+type ScheduleEntry = Pick<Tables<'payment_schedules'>, 'id' | 'expected_amount' | 'paid_amount'>
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
     }
 
-    const typedBuyer = buyer as { id: string; total_amount: number; amount_paid: number; payment_status: string; estate_id: string | null }
+    const typedBuyer = buyer as BuyerPaymentInfo
 
     // Record the payment
     const { data: payment, error: paymentError } = await adminClient
@@ -68,10 +72,10 @@ export async function POST(request: NextRequest) {
         .select('available_plots')
         .eq('id', typedBuyer.estate_id)
         .single()
-      if (estate && (estate as any).available_plots > 0) {
+      if (estate && estate.available_plots > 0) {
         await adminClient
           .from('estates')
-          .update({ available_plots: (estate as any).available_plots - 1 })
+          .update({ available_plots: estate.available_plots - 1 })
           .eq('id', typedBuyer.estate_id)
       }
     }
@@ -84,7 +88,7 @@ export async function POST(request: NextRequest) {
         .eq('id', parsed.data.buyer_id)
         .single()
 
-      if (buyerPlan && (buyerPlan as any).has_installment_plan) {
+      if (buyerPlan && buyerPlan.has_installment_plan) {
         // If buyer is now fully paid, mark all remaining schedule entries as paid
         if (newPaymentStatus === 'fully_paid') {
           const { data: unpaidEntries } = await adminClient
@@ -99,11 +103,11 @@ export async function POST(request: NextRequest) {
               await adminClient
                 .from('payment_schedules')
                 .update({
-                  paid_amount: (entry as any).expected_amount,
+                  paid_amount: entry.expected_amount,
                   status: 'paid',
-                  payment_id: (payment as any).id,
+                  payment_id: payment.id,
                 })
-                .eq('id', (entry as any).id)
+                .eq('id', entry.id)
             }
           }
 
@@ -125,7 +129,7 @@ export async function POST(request: NextRequest) {
               .single()
 
             if (targetEntry) {
-              const entry = targetEntry as any
+              const entry: ScheduleEntry = targetEntry
               const entryRemaining = entry.expected_amount - entry.paid_amount
               const applyAmount = Math.min(remainingAmount, entryRemaining)
               const newPaidAmount = entry.paid_amount + applyAmount
@@ -136,7 +140,7 @@ export async function POST(request: NextRequest) {
                 .update({
                   paid_amount: newPaidAmount,
                   status: entryStatus,
-                  payment_id: (payment as any).id,
+                  payment_id: payment.id,
                 })
                 .eq('id', entry.id)
 
@@ -158,7 +162,7 @@ export async function POST(request: NextRequest) {
 
             if (!nextEntry) break
 
-            const entry = nextEntry as any
+            const entry: ScheduleEntry = nextEntry
             const entryRemaining = entry.expected_amount - entry.paid_amount
             const applyAmount = Math.min(remainingAmount, entryRemaining)
             const newPaidAmount = entry.paid_amount + applyAmount
@@ -169,7 +173,7 @@ export async function POST(request: NextRequest) {
               .update({
                 paid_amount: newPaidAmount,
                 status: entryStatus,
-                payment_id: (payment as any).id,
+                payment_id: payment.id,
               })
               .eq('id', entry.id)
 
@@ -190,7 +194,7 @@ export async function POST(request: NextRequest) {
           if (nextDue) {
             await adminClient
               .from('buyers')
-              .update({ next_payment_date: (nextDue as any).due_date })
+              .update({ next_payment_date: nextDue.due_date })
               .eq('id', parsed.data.buyer_id)
           }
         }

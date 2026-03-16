@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { paymentReminderHtml } from '@/lib/email-templates'
 import { formatCurrency, formatDate } from '@/lib/utils'
-
 // This route is called by a cron job (e.g., Vercel Cron, Supabase Edge Function, or external scheduler).
 // It checks all companies with auto_reminders_enabled, finds installments due within reminder_days_before,
 // and sends reminder emails to buyers who haven't been reminded for this installment yet.
@@ -30,15 +29,14 @@ export async function POST(request: NextRequest) {
     }
 
     const enabledCompanies = companies.filter(
-      (c: any) => c.auto_reminders_enabled === true
+      (c) => c.auto_reminders_enabled === true
     )
 
     let totalSent = 0
     let totalSkipped = 0
 
     for (const company of enabledCompanies) {
-      const comp = company as any
-      const daysBefore = comp.reminder_days_before || 3
+      const daysBefore = company.reminder_days_before || 3
 
       // Calculate the target date (X days from now)
       const targetDate = new Date()
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest) {
       const { data: entries } = await adminClient
         .from('payment_schedules')
         .select('id, buyer_id, installment_number, due_date, expected_amount, paid_amount, status')
-        .eq('company_id', comp.id)
+        .eq('company_id', company.id)
         .eq('due_date', targetDateStr)
         .in('status', ['unpaid', 'partial'])
 
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Get unique buyer IDs
-      const buyerIds = [...new Set(entries.map((e: any) => e.buyer_id))]
+      const buyerIds = [...new Set(entries.map((e) => e.buyer_id))]
 
       // Fetch buyers with emails
       const { data: buyers } = await adminClient
@@ -73,52 +71,51 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const buyerMap = new Map(buyers.map((b: any) => [b.id, b]))
+      const buyerMap = new Map(buyers.map((b) => [b.id, b]))
 
       // Check which installments already have reminders sent today
       const today = new Date().toISOString().split('T')[0]
       const { data: existingReminders } = await adminClient
         .from('reminders')
         .select('buyer_id, message')
-        .eq('company_id', comp.id)
+        .eq('company_id', company.id)
         .eq('reminder_type', 'payment_due')
         .gte('sent_at', `${today}T00:00:00`)
 
       const alreadyReminded = new Set(
-        (existingReminders || []).map((r: any) => r.buyer_id)
+        (existingReminders || []).map((r) => r.buyer_id)
       )
 
       for (const entry of entries) {
-        const e = entry as any
-        const buyer = buyerMap.get(e.buyer_id)
-        if (!buyer || alreadyReminded.has(e.buyer_id)) {
+        const buyer = buyerMap.get(entry.buyer_id)
+        if (!buyer || alreadyReminded.has(entry.buyer_id)) {
           totalSkipped++
           continue
         }
 
-        const remaining = e.expected_amount - e.paid_amount
-        const isOverdue = e.status === 'overdue'
+        const remaining = entry.expected_amount - entry.paid_amount
+        const isOverdue = entry.status === 'overdue'
 
         try {
           await getResend().emails.send({
             from: FROM_EMAIL,
-            to: buyer.email,
-            subject: `Payment Reminder from ${comp.name}`,
+            to: buyer.email!,
+            subject: `Payment Reminder from ${company.name}`,
             html: paymentReminderHtml({
               buyerFirstName: buyer.first_name,
-              companyName: comp.name,
+              companyName: company.name,
               amountDue: formatCurrency(remaining),
-              dueDate: formatDate(e.due_date),
+              dueDate: formatDate(entry.due_date),
               isOverdue,
             }),
           })
 
           // Record reminder
           await adminClient.from('reminders').insert({
-            buyer_id: e.buyer_id,
-            company_id: comp.id,
+            buyer_id: entry.buyer_id,
+            company_id: company.id,
             reminder_type: 'payment_due',
-            message: `Auto-reminder: Installment #${e.installment_number} of ${formatCurrency(remaining)} due on ${formatDate(e.due_date)}`,
+            message: `Auto-reminder: Installment #${entry.installment_number} of ${formatCurrency(remaining)} due on ${formatDate(entry.due_date)}`,
             sent_via: 'email',
             sent_at: new Date().toISOString(),
             sent_by: null,

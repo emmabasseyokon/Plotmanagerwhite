@@ -34,6 +34,8 @@ export default async function EstateDetailPage({ params }: EstateDetailProps) {
 
   if (!estate) notFound()
 
+  const plotSizes = (estate as unknown as { plot_sizes?: Array<{ size: string; price: number; is_default?: boolean }> | null }).plot_sizes ?? null
+
   const { data: company } = await adminClient
     .from('companies')
     .select('name, phone, email')
@@ -129,11 +131,11 @@ export default async function EstateDetailPage({ params }: EstateDetailProps) {
 
             {/* Stats */}
             <div className="space-y-4">
-              {(estate as any).plot_sizes && (estate as any).plot_sizes.length > 0 ? (
+              {plotSizes && plotSizes.length > 0 ? (
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-500 mb-3">Plot Sizes & Pricing</p>
                   <div className="space-y-2">
-                    {((estate as any).plot_sizes as Array<{ size: string; price: number }>).map((ps) => (
+                    {plotSizes.map((ps) => (
                       <div key={ps.size} className="flex items-center justify-between">
                         <span className="text-gray-700 font-medium">{ps.size}</span>
                         <span className="text-lg font-bold text-gray-900">{formatPrice(ps.price)}</span>
