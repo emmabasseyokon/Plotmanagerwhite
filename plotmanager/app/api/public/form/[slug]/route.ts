@@ -186,6 +186,19 @@ export async function POST(
       return NextResponse.json({ error: buyerError.message }, { status: 500 })
     }
 
+    // Auto-create payment record for initial amount paid (outright or initial deposit)
+    if (buyer && insertData.amount_paid > 0) {
+      await adminClient.from('payments').insert({
+        company_id: company.id,
+        buyer_id: (buyer as any).id,
+        amount: insertData.amount_paid,
+        payment_date: insertData.purchase_date || today,
+        payment_method: 'bank_transfer',
+        reference: null,
+        notes: isOutright ? 'Outright payment' : 'Initial deposit',
+      })
+    }
+
     // Decrement plots if outright
     if (isOutright) {
       const newAvailable = Math.max(0, (estate as any).available_plots - numberOfPlots)

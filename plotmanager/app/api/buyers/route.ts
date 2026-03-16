@@ -97,6 +97,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-create payment record for initial amount paid (outright or initial deposit)
+    if (buyer && insertData.amount_paid > 0) {
+      const today = new Date().toISOString().split('T')[0]
+      await adminClient.from('payments').insert({
+        company_id: companyId,
+        buyer_id: (buyer as any).id,
+        amount: insertData.amount_paid,
+        payment_date: insertData.purchase_date || today,
+        payment_method: 'bank_transfer',
+        reference: null,
+        notes: insertData.payment_status === 'fully_paid' ? 'Outright payment' : 'Initial deposit',
+        recorded_by: result.auth.userId,
+      })
+    }
+
     // Generate installment schedule if plan is enabled
     if (installment_plan?.enabled && installment_plan.duration_months && installment_plan.start_date && buyer) {
       const schedule = generateInstallmentSchedule({
