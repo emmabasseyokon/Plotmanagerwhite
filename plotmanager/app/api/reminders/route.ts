@@ -67,8 +67,23 @@ export async function POST(request: NextRequest) {
       .single()
 
     const companyName = company?.name || 'Your Real Estate Company'
-    const outstanding = (buyer.total_amount || 0) - (buyer.amount_paid || 0)
     const isOverdue = buyer.payment_status === 'overdue'
+
+    // Get the next unpaid/partial/overdue installment amount instead of total outstanding
+    const { data: nextSchedule } = await adminClient
+      .from('payment_schedules')
+      .select('expected_amount, paid_amount, due_date')
+      .eq('buyer_id', parsed.data.buyer_id)
+      .eq('company_id', companyId)
+      .in('status', ['unpaid', 'partial', 'overdue'])
+      .order('due_date', { ascending: true })
+      .limit(1)
+      .single()
+
+    const amountDue = nextSchedule
+      ? nextSchedule.expected_amount - nextSchedule.paid_amount
+      : (buyer.total_amount || 0) - (buyer.amount_paid || 0)
+    const dueDate = nextSchedule?.due_date || buyer.next_payment_date
 
     let emailSent = false
     let emailError: string | null = null
@@ -81,8 +96,8 @@ export async function POST(request: NextRequest) {
         html: paymentReminderHtml({
           buyerFirstName: buyer.first_name,
           companyName,
-          amountDue: formatCurrency(outstanding),
-          dueDate: buyer.next_payment_date ? formatDate(buyer.next_payment_date) : 'N/A',
+          amountDue: formatCurrency(amountDue),
+          dueDate: dueDate ? formatDate(dueDate) : 'N/A',
           isOverdue,
         }),
       })

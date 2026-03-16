@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { APP_NAME } from './config'
 
 let _resend: Resend | null = null
 
@@ -9,4 +10,4 @@ export function getResend(): Resend {
   return _resend
 }
 
-export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'PlotManager <onboarding@resend.dev>'
+export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || `${APP_NAME} <onboarding@resend.dev>`
