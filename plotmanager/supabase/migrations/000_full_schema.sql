@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS estates (
     total_plots INTEGER NOT NULL DEFAULT 0,
     available_plots INTEGER NOT NULL DEFAULT 0,
     price_per_plot NUMERIC(15, 2) DEFAULT 0,
+    plot_sizes JSONB DEFAULT '[]'::jsonb,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'sold_out', 'coming_soon')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

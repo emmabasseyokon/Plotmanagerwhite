@@ -13,6 +13,7 @@ import {
   FileText,
   DollarSign,
   CalendarDays,
+  Download,
 } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BuyerActions } from '@/components/BuyerActions'
@@ -539,12 +540,21 @@ export default async function BuyerDetailPage({
                       </p>
                     </div>
                   </div>
-                  {payment.reference && (
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400">Ref</p>
-                      <p className="text-sm text-gray-600">{payment.reference}</p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {payment.reference && (
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400">Ref</p>
+                        <p className="text-sm text-gray-600">{payment.reference}</p>
+                      </div>
+                    )}
+                    <a
+                      href={`/api/receipts/${payment.id}`}
+                      title="Download Receipt"
+                      className="p-2 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>
