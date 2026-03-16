@@ -56,6 +56,7 @@ export default async function EstateDetailPage({
     total_plots: number
     available_plots: number
     price_per_plot: number
+    plot_sizes: Array<{ size: string; price: number }> | null
     status: string
     created_at: string
   }
@@ -130,10 +131,26 @@ export default async function EstateDetailPage({
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-gray-500 mb-1">Price per Plot</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(estate.price_per_plot || 0)}
-            </p>
+            {estate.plot_sizes && estate.plot_sizes.length > 0 ? (
+              <>
+                <p className="text-sm text-gray-500 mb-2">Plot Sizes</p>
+                <div className="space-y-1.5">
+                  {estate.plot_sizes.map((ps) => (
+                    <div key={ps.size} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{ps.size}</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(ps.price)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-1">Price per Plot</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(estate.price_per_plot || 0)}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

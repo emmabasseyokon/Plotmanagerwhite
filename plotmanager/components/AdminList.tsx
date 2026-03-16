@@ -123,27 +123,27 @@ export function AdminList({ admins, currentUserId, userRole }: AdminListProps) {
               {admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
                       {admin.role === 'super_admin' ? (
                         <ShieldCheck className="w-5 h-5 text-primary-600" />
                       ) : (
                         <Shield className="w-5 h-5 text-primary-600" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{admin.full_name}</p>
-                      <p className="text-sm text-gray-500">{admin.email}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{admin.full_name}</p>
+                      <p className="text-sm text-gray-500 truncate">{admin.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${roleColors[admin.role] || roleColors.admin}`}>
+                  <div className="flex items-center gap-2 sm:gap-3 ml-13 sm:ml-0">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${roleColors[admin.role] || roleColors.admin}`}>
                       {roleLabels[admin.role] || admin.role}
                     </span>
                     {admin.id === currentUserId && (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 whitespace-nowrap">
                         You
                       </span>
                     )}

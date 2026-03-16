@@ -8,11 +8,17 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 import { User, MapPin, CreditCard, Users, Share2, CheckCircle } from 'lucide-react'
 
+interface PlotSizeOption {
+  size: string
+  price: number
+}
+
 interface Estate {
   id: string
   name: string
   location: string
   price_per_plot: number
+  plot_sizes: PlotSizeOption[]
 }
 
 interface PublicBuyerFormProps {
@@ -75,7 +81,9 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [notes, setNotes] = useState('')
 
   const selectedEstate = estates.find((e) => e.id === estateId)
-  const pricePerPlot = selectedEstate?.price_per_plot || 0
+  const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
+  const selectedPlotSizeEntry = estateHasPlotSizes ? selectedEstate.plot_sizes.find((ps) => ps.size === plotSize) : null
+  const pricePerPlot = selectedPlotSizeEntry ? selectedPlotSizeEntry.price : (selectedEstate?.price_per_plot || 0)
   const totalAmount = pricePerPlot * numberOfPlots
 
   const schedule = paymentType === 'installment' && installmentDuration > 0 && totalAmount > 0
@@ -286,13 +294,40 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                     <p className="text-gray-900 font-semibold">{selectedEstate.name}</p>
                   </div>
                   <div>
-                    <p className="text-primary-600 font-medium">Price per Plot</p>
+                    <p className="text-primary-600 font-medium">
+                      {estateHasPlotSizes && plotSize ? 'Price per Plot' : 'Starting from'}
+                    </p>
                     <p className="text-gray-900 font-semibold">{formatCurrency(pricePerPlot)}</p>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {estateHasPlotSizes ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Plot Size *</label>
+                    <select
+                      className={selectClass}
+                      value={plotSize}
+                      onChange={(e) => setPlotSize(e.target.value)}
+                      required
+                    >
+                      <option value="">Select plot size</option>
+                      {selectedEstate.plot_sizes.map((ps) => (
+                        <option key={ps.size} value={ps.size}>
+                          {ps.size} — {formatCurrency(ps.price)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <Input
+                    label="Plot Size"
+                    placeholder="e.g. 600sqm"
+                    value={plotSize}
+                    onChange={(e) => setPlotSize(e.target.value)}
+                  />
+                )}
                 <Input
                   label="Number of Plots"
                   type="number"
@@ -300,20 +335,14 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                   value={String(numberOfPlots)}
                   onChange={(e) => setNumberOfPlots(Math.max(1, parseInt(e.target.value) || 1))}
                 />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Amount</label>
                   <div className="flex h-11 w-full items-center rounded-lg border-2 border-gray-200 bg-gray-50 px-4 text-base font-semibold text-gray-900">
                     {formatCurrency(totalAmount)}
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Plot Size"
-                  placeholder="e.g. 600sqm"
-                  value={plotSize}
-                  onChange={(e) => setPlotSize(e.target.value)}
-                />
                 <Input
                   label="Purchase Date"
                   type="date"

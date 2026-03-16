@@ -53,9 +53,15 @@ export async function POST(request: NextRequest) {
     const parsed = estateSchema.safeParse(body)
     if (!parsed.success) return validationError(parsed.error)
 
+    // Auto-compute price_per_plot from plot_sizes
+    const insertData: any = { ...parsed.data, company_id: companyId }
+    if (insertData.plot_sizes && insertData.plot_sizes.length > 0) {
+      insertData.price_per_plot = Math.min(...insertData.plot_sizes.map((ps: any) => ps.price))
+    }
+
     const { data: estate, error } = await adminClient
       .from('estates')
-      .insert({ ...parsed.data, company_id: companyId })
+      .insert(insertData)
       .select()
       .single()
 

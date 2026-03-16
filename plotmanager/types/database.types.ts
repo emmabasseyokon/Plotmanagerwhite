@@ -195,6 +195,7 @@ export type Database = {
           image_url: string | null
           location: string | null
           name: string
+          plot_sizes: Json | null
           price_per_plot: number | null
           status: string
           total_plots: number
@@ -209,6 +210,7 @@ export type Database = {
           image_url?: string | null
           location?: string | null
           name: string
+          plot_sizes?: Json | null
           price_per_plot?: number | null
           status?: string
           total_plots?: number
@@ -223,6 +225,7 @@ export type Database = {
           image_url?: string | null
           location?: string | null
           name?: string
+          plot_sizes?: Json | null
           price_per_plot?: number | null
           status?: string
           total_plots?: number

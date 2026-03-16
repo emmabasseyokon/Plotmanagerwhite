@@ -35,7 +35,7 @@ export async function GET(
 
     const { data: estates } = await adminClient
       .from('estates')
-      .select('id, name, location, price_per_plot')
+      .select('id, name, location, price_per_plot, plot_sizes')
       .eq('company_id', company.id)
       .eq('status', 'active')
       .gt('available_plots', 0)
@@ -48,6 +48,7 @@ export async function GET(
         name: e.name,
         location: e.location,
         price_per_plot: e.price_per_plot,
+        plot_sizes: e.plot_sizes || [],
       })),
     })
   } catch {
@@ -86,7 +87,7 @@ export async function POST(
     // Verify estate belongs to company and has available plots
     const { data: estate } = await adminClient
       .from('estates')
-      .select('id, name, location, price_per_plot, available_plots')
+      .select('id, name, location, price_per_plot, available_plots, plot_sizes')
       .eq('id', data.estate_id)
       .eq('company_id', company.id)
       .single()
@@ -117,8 +118,15 @@ export async function POST(
       )
     }
 
-    // Calculate total amount
-    const pricePerPlot = (estate as any).price_per_plot || 0
+    // Calculate total amount — use plot_sizes price if buyer selected a specific size
+    let pricePerPlot = (estate as any).price_per_plot || 0
+    const plotSizes = (estate as any).plot_sizes || []
+    if (data.plot_size && plotSizes.length > 0) {
+      const matchedSize = plotSizes.find((ps: any) => ps.size === data.plot_size)
+      if (matchedSize) {
+        pricePerPlot = matchedSize.price
+      }
+    }
     const numberOfPlots = data.number_of_plots || 1
     const totalAmount = pricePerPlot * numberOfPlots
 

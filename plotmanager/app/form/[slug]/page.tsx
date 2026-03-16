@@ -43,7 +43,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
   // Fetch active estates
   const { data: estatesRaw } = await adminClient
     .from('estates')
-    .select('id, name, location, price_per_plot')
+    .select('id, name, location, price_per_plot, plot_sizes')
     .eq('company_id', company.id)
     .eq('status', 'active')
     .gt('available_plots', 0)
@@ -54,6 +54,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
     name: e.name as string,
     location: (e.location || '') as string,
     price_per_plot: (e.price_per_plot || 0) as number,
+    plot_sizes: (e.plot_sizes || []) as Array<{ size: string; price: number }>,
   }))
 
   return (

@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: estates, error } = await adminClient
       .from('estates')
-      .select('id, name, location, description, total_plots, available_plots, price_per_plot, status, image_url')
+      .select('id, name, location, description, total_plots, available_plots, price_per_plot, plot_sizes, status, image_url')
       .eq('company_id', APP_COMPANY_ID)
       .in('status', ['active', 'sold_out'])
       .order('created_at', { ascending: false })

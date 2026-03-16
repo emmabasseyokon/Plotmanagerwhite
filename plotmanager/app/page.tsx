@@ -174,7 +174,9 @@ export default async function LandingPage() {
                       {/* Price */}
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-gray-500">Price per plot</p>
+                          <p className="text-xs text-gray-500">
+                            {(estate as any).plot_sizes?.length > 1 ? 'Starting from' : 'Price per plot'}
+                          </p>
                           <p className="text-lg font-bold text-gray-900">
                             {estate.price_per_plot ? formatPrice(estate.price_per_plot) : 'Contact us'}
                           </p>

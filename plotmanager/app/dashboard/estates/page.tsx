@@ -145,7 +145,7 @@ export default async function EstatesPage({
                         <span className="text-gray-400"> / {estate.total_plots}</span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-gray-900">
-                        {formatCurrency(estate.price_per_plot || 0)}
+                        {(estate as any).plot_sizes?.length > 1 ? 'From ' : ''}{formatCurrency(estate.price_per_plot || 0)}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${ESTATE_STATUS_COLORS[estate.status] || ESTATE_STATUS_COLORS.active}`}>
@@ -178,7 +178,7 @@ export default async function EstatesPage({
                       Plots: {estate.available_plots}/{estate.total_plots}
                     </span>
                     <span className="text-gray-900 font-medium">
-                      {formatCurrency(estate.price_per_plot || 0)}/plot
+                      {(estate as any).plot_sizes?.length > 1 ? 'From ' : ''}{formatCurrency(estate.price_per_plot || 0)}/plot
                     </span>
                   </div>
                 </Link>

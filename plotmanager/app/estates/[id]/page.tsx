@@ -128,13 +128,27 @@ export default async function EstateDetailPage({ params }: EstateDetailProps) {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-sm text-gray-500">Price per plot</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {estate.price_per_plot ? formatPrice(estate.price_per_plot) : 'Contact us'}
-                </p>
-              </div>
+            <div className="space-y-4">
+              {(estate as any).plot_sizes && (estate as any).plot_sizes.length > 0 ? (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 mb-3">Plot Sizes & Pricing</p>
+                  <div className="space-y-2">
+                    {((estate as any).plot_sizes as Array<{ size: string; price: number }>).map((ps) => (
+                      <div key={ps.size} className="flex items-center justify-between">
+                        <span className="text-gray-700 font-medium">{ps.size}</span>
+                        <span className="text-lg font-bold text-gray-900">{formatPrice(ps.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-500">Price per plot</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {estate.price_per_plot ? formatPrice(estate.price_per_plot) : 'Contact us'}
+                  </p>
+                </div>
+              )}
               <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm text-gray-500">Available plots</p>
                 <p className="text-2xl font-bold text-gray-900">

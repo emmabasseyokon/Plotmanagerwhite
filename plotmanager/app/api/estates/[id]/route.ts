@@ -54,9 +54,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Estate not found' }, { status: 404 })
     }
 
+    // Auto-compute price_per_plot from plot_sizes
+    const updateData: any = { ...parsed.data }
+    if (updateData.plot_sizes && updateData.plot_sizes.length > 0) {
+      updateData.price_per_plot = Math.min(...updateData.plot_sizes.map((ps: any) => ps.price))
+    }
+
     const { data: estate, error } = await adminClient
       .from('estates')
-      .update(parsed.data)
+      .update(updateData)
       .eq('id', id)
       .eq('company_id', companyId)
       .select()

@@ -61,13 +61,19 @@ export const buyerSchema = z.object({
   installment_plan: installmentPlanSchema.optional(),
 })
 
+export const plotSizeEntrySchema = z.object({
+  size: z.string().min(1, 'Size is required'),
+  price: z.number().min(0, 'Price must be 0 or greater'),
+})
+
 export const estateSchema = z.object({
   name: z.string().min(2, 'Estate name must be at least 2 characters'),
   location: z.string().optional().or(z.literal('')),
   description: z.string().optional().or(z.literal('')),
   total_plots: z.number().int().min(0, 'Must be 0 or greater'),
   available_plots: z.number().int().min(0, 'Must be 0 or greater'),
-  price_per_plot: z.number().min(0, 'Must be 0 or greater'),
+  price_per_plot: z.number().min(0, 'Must be 0 or greater').optional(),
+  plot_sizes: z.array(plotSizeEntrySchema).optional().default([]),
   status: z.enum(['active', 'sold_out', 'coming_soon']).default('active'),
   image_url: z.string().url().optional().or(z.literal('')).or(z.literal(undefined)),
 })
@@ -119,6 +125,7 @@ export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 export type AdminFormData = z.infer<typeof adminSchema>
 export type BuyerFormData = z.infer<typeof buyerSchema>
 export type EstateFormData = z.infer<typeof estateSchema>
+export type PlotSizeEntry = z.infer<typeof plotSizeEntrySchema>
 export type CreateAdminFormData = z.infer<typeof createAdminSchema>
 export type InstallmentPlanData = z.infer<typeof installmentPlanSchema>
 export type PaymentScheduleData = z.infer<typeof paymentScheduleSchema>

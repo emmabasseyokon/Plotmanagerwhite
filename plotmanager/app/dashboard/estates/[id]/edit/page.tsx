@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { estateSchema, type EstateFormData } from '@/lib/validations'
+import { estateSchema, type EstateFormData, type PlotSizeEntry } from '@/lib/validations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { ArrowLeft, X, ImageIcon } from 'lucide-react'
+import { ArrowLeft, X, ImageIcon, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -27,6 +27,7 @@ export default function EditEstatePage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string>('')
+  const [plotSizes, setPlotSizes] = useState<PlotSizeEntry[]>([{ size: '', price: 0 }])
 
   const {
     register,
@@ -42,14 +43,18 @@ export default function EditEstatePage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.estate) {
+          const existingPlotSizes = data.estate.plot_sizes || []
+          if (existingPlotSizes.length > 0) {
+            setPlotSizes(existingPlotSizes)
+          }
           reset({
             name: data.estate.name || '',
             location: data.estate.location || '',
             description: data.estate.description || '',
             total_plots: data.estate.total_plots || 0,
             available_plots: data.estate.available_plots || 0,
-            price_per_plot: data.estate.price_per_plot || 0,
             status: data.estate.status || 'active',
+            plot_sizes: existingPlotSizes,
           })
           if (data.estate.image_url) {
             setImagePreview(data.estate.image_url)
@@ -99,10 +104,12 @@ export default function EditEstatePage() {
     setServerError(null)
 
     try {
+      const validPlotSizes = plotSizes.filter((ps) => ps.size.trim() !== '' && ps.price > 0)
+
       const res = await fetch(`/api/estates/${estateId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, image_url: imageUrl || null }),
+        body: JSON.stringify({ ...data, plot_sizes: validPlotSizes, image_url: imageUrl || null }),
       })
 
       if (!res.ok) {
@@ -231,7 +238,7 @@ export default function EditEstatePage() {
             <CardTitle>Plot Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Total Plots *"
                 type="number"
@@ -244,13 +251,65 @@ export default function EditEstatePage() {
                 error={errors.available_plots?.message}
                 {...register('available_plots', { valueAsNumber: true })}
               />
-              <Input
-                label="Price per Plot *"
-                type="number"
-                error={errors.price_per_plot?.message}
-                {...register('price_per_plot', { valueAsNumber: true })}
-              />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Plot Sizes & Pricing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Plot Sizes & Pricing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-500">
+              Add the available plot sizes and their prices for this estate.
+            </p>
+            {plotSizes.map((ps, index) => (
+              <div key={index} className="flex items-end gap-3">
+                <div className="flex-1">
+                  <Input
+                    label={index === 0 ? 'Size' : undefined}
+                    placeholder="e.g. 250sqm"
+                    value={ps.size}
+                    onChange={(e) => {
+                      const updated = [...plotSizes]
+                      updated[index] = { ...updated[index], size: e.target.value }
+                      setPlotSizes(updated)
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    label={index === 0 ? 'Price' : undefined}
+                    type="number"
+                    placeholder="e.g. 400000"
+                    value={ps.price || ''}
+                    onChange={(e) => {
+                      const updated = [...plotSizes]
+                      updated[index] = { ...updated[index], price: Number(e.target.value) || 0 }
+                      setPlotSizes(updated)
+                    }}
+                  />
+                </div>
+                {plotSizes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setPlotSizes(plotSizes.filter((_, i) => i !== index))}
+                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors mb-0.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPlotSizes([...plotSizes, { size: '', price: 0 }])}
+              className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Plot Size
+            </button>
           </CardContent>
         </Card>
 

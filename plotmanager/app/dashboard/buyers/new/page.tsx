@@ -15,12 +15,18 @@ import Link from 'next/link'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 import { formatCurrency } from '@/lib/utils'
 
+interface PlotSizeOption {
+  size: string
+  price: number
+}
+
 interface Estate {
   id: string
   name: string
   location: string | null
   price_per_plot: number
   available_plots: number
+  plot_sizes: PlotSizeOption[]
 }
 
 export default function NewBuyerPage() {
@@ -88,13 +94,33 @@ export default function NewBuyerPage() {
       .catch(() => {})
   }, [])
 
+  const selectedEstate = estates.find((e) => e.id === watch('estate_id'))
+  const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
+
   const handleEstateChange = (estateId: string) => {
     setValue('estate_id', estateId)
+    setValue('plot_size', '')
     if (estateId) {
       const estate = estates.find((e) => e.id === estateId)
       if (estate) {
         setValue('plot_location', estate.location || estate.name)
-        setValue('total_amount', estate.price_per_plot || 0)
+        // If estate has plot sizes, don't set total_amount yet — wait for plot size selection
+        if (!estate.plot_sizes || estate.plot_sizes.length === 0) {
+          setValue('total_amount', estate.price_per_plot || 0)
+        } else {
+          setValue('total_amount', 0)
+        }
+      }
+    }
+  }
+
+  const handlePlotSizeChange = (size: string) => {
+    setValue('plot_size', size)
+    if (selectedEstate && size) {
+      const match = selectedEstate.plot_sizes.find((ps) => ps.size === size)
+      if (match) {
+        const numPlots = watch('number_of_plots') || 1
+        setValue('total_amount', match.price * numPlots)
       }
     }
   }
@@ -287,12 +313,30 @@ export default function NewBuyerPage() {
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Plot Size"
-                placeholder="500sqm"
-                error={errors.plot_size?.message}
-                {...register('plot_size')}
-              />
+              {estateHasPlotSizes ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Plot Size *</label>
+                  <select
+                    className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    value={watch('plot_size') || ''}
+                    onChange={(e) => handlePlotSizeChange(e.target.value)}
+                  >
+                    <option value="">Select plot size</option>
+                    {selectedEstate!.plot_sizes.map((ps) => (
+                      <option key={ps.size} value={ps.size}>
+                        {ps.size} — {formatCurrency(ps.price)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <Input
+                  label="Plot Size"
+                  placeholder="500sqm"
+                  error={errors.plot_size?.message}
+                  {...register('plot_size')}
+                />
+              )}
               <Input
                 label="Purchase Date"
                 type="date"
@@ -315,6 +359,7 @@ export default function NewBuyerPage() {
               placeholder="5000000"
               error={errors.total_amount?.message}
               {...register('total_amount', { valueAsNumber: true })}
+              readOnly={!!estateHasPlotSizes && !!watch('plot_size')}
             />
 
             {/* Payment mode selection */}
