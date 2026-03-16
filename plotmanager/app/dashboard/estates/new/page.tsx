@@ -22,7 +22,7 @@ export default function NewEstatePage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string>('')
-  const [plotSizes, setPlotSizes] = useState<PlotSizeEntry[]>([{ size: '', price: 0 }])
+  const [plotSizes, setPlotSizes] = useState<PlotSizeEntry[]>([{ size: '', price: 0, is_default: true }])
 
   const {
     register,
@@ -230,10 +230,25 @@ export default function NewEstatePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-500">
-              Add the available plot sizes and their prices for this estate.
+              Add the available plot sizes and their prices. Check the box next to the default price shown on the landing page.
             </p>
             {plotSizes.map((ps, index) => (
               <div key={index} className="flex items-end gap-3">
+                <div className="flex items-center justify-center mb-1">
+                  <input
+                    type="checkbox"
+                    checked={ps.is_default || false}
+                    onChange={() => {
+                      const updated = plotSizes.map((p, i) => ({
+                        ...p,
+                        is_default: i === index ? !p.is_default : false,
+                      }))
+                      setPlotSizes(updated)
+                    }}
+                    title="Set as default price"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                  />
+                </div>
                 <div className="flex-1">
                   <Input
                     label={index === 0 ? 'Size' : undefined}
@@ -262,7 +277,14 @@ export default function NewEstatePage() {
                 {plotSizes.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => setPlotSizes(plotSizes.filter((_, i) => i !== index))}
+                    onClick={() => {
+                      const wasDefault = plotSizes[index].is_default
+                      const remaining = plotSizes.filter((_, i) => i !== index)
+                      if (wasDefault && remaining.length > 0) {
+                        remaining[0] = { ...remaining[0], is_default: true }
+                      }
+                      setPlotSizes(remaining)
+                    }}
                     className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors mb-0.5"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -272,7 +294,7 @@ export default function NewEstatePage() {
             ))}
             <button
               type="button"
-              onClick={() => setPlotSizes([...plotSizes, { size: '', price: 0 }])}
+              onClick={() => setPlotSizes([...plotSizes, { size: '', price: 0, is_default: false }])}
               className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />

@@ -64,6 +64,7 @@ export const buyerSchema = z.object({
 export const plotSizeEntrySchema = z.object({
   size: z.string().min(1, 'Size is required'),
   price: z.number().min(0, 'Price must be 0 or greater'),
+  is_default: z.boolean().optional().default(false),
 })
 
 export const estateSchema = z.object({
