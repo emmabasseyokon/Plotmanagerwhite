@@ -111,13 +111,13 @@ export default async function LandingPage() {
                     className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-shadow group block"
                   >
                     {/* Image */}
-                    <div className="relative h-52 bg-gradient-to-br from-primary-100 to-primary-50 overflow-hidden">
+                    <div className="relative h-52 bg-white overflow-hidden">
                       {estate.image_url ? (
                         <Image
                           src={estate.image_url}
                           alt={estate.name}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="object-contain group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
