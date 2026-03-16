@@ -60,9 +60,12 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [state, setState] = useState('')
   const [estateId, setEstateId] = useState('')
   const [numberOfPlots, setNumberOfPlots] = useState(1)
+  const [plotSize, setPlotSize] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentType, setPaymentType] = useState<'outright' | 'installment'>('outright')
   const [installmentDuration, setInstallmentDuration] = useState(6)
   const [initialDeposit, setInitialDeposit] = useState(0)
+  const [planStartDate, setPlanStartDate] = useState(new Date().toISOString().split('T')[0])
   const [nokName, setNokName] = useState('')
   const [nokPhone, setNokPhone] = useState('')
   const [nokAddress, setNokAddress] = useState('')
@@ -80,7 +83,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
         total_amount: totalAmount,
         initial_deposit: initialDeposit,
         duration_months: installmentDuration,
-        start_date: new Date().toISOString().split('T')[0],
+        start_date: planStartDate,
       })
     : []
 
@@ -105,9 +108,12 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           state: state || undefined,
           estate_id: estateId,
           number_of_plots: numberOfPlots,
+          plot_size: plotSize || undefined,
+          purchase_date: purchaseDate || undefined,
           payment_type: paymentType,
           installment_duration: paymentType === 'installment' ? installmentDuration : undefined,
           initial_deposit: paymentType === 'installment' ? initialDeposit : undefined,
+          plan_start_date: paymentType === 'installment' ? planStartDate : undefined,
           next_of_kin_name: nokName || undefined,
           next_of_kin_phone: nokPhone || undefined,
           next_of_kin_address: nokAddress || undefined,
@@ -301,6 +307,20 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Plot Size"
+                  placeholder="e.g. 600sqm"
+                  value={plotSize}
+                  onChange={(e) => setPlotSize(e.target.value)}
+                />
+                <Input
+                  label="Purchase Date"
+                  type="date"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                />
+              </div>
             </>
           )}
         </CardContent>
@@ -374,14 +394,23 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                     ))}
                   </div>
                 </div>
-                <Input
-                  label="Initial Deposit (optional)"
-                  type="number"
-                  placeholder="0"
-                  min={0}
-                  value={String(initialDeposit)}
-                  onChange={(e) => setInitialDeposit(Math.max(0, parseFloat(e.target.value) || 0))}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Initial Deposit (optional)"
+                    type="number"
+                    placeholder="0"
+                    min={0}
+                    value={String(initialDeposit)}
+                    onChange={(e) => setInitialDeposit(Math.max(0, parseFloat(e.target.value) || 0))}
+                  />
+                  <Input
+                    label="Start Date"
+                    type="date"
+                    value={planStartDate}
+                    onChange={(e) => setPlanStartDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
 
                 {schedule.length > 0 && (
                   <div>

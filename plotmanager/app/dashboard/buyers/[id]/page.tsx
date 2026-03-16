@@ -10,7 +10,6 @@ import {
   Phone,
   MapPin,
   Calendar,
-  CreditCard,
   FileText,
   DollarSign,
   CalendarDays,
@@ -43,7 +42,7 @@ export default async function BuyerDetailPage({
 
   const { data: buyerRaw } = await supabase
     .from('buyers')
-    .select('*')
+    .select('*, estates(name)')
     .eq('id', id)
     .eq('company_id', companyId)
     .single()
@@ -72,6 +71,7 @@ export default async function BuyerDetailPage({
     plan_duration_months: number | null
     plan_start_date: string | null
     initial_deposit: number | null
+    estates: { name: string } | null
   }
 
   const { data: paymentsRaw } = await supabase
@@ -115,14 +115,14 @@ export default async function BuyerDetailPage({
 
     const today = new Date().toISOString().split('T')[0]
     scheduleEntries = ((scheduleRaw || []) as typeof scheduleEntries).map((entry) => {
-      if ((entry.status === 'pending' || entry.status === 'partial') && entry.due_date < today) {
+      if ((entry.status === 'unpaid' || entry.status === 'partial') && entry.due_date < today) {
         return { ...entry, status: 'overdue' }
       }
       return entry
     })
 
     nextInstallment = scheduleEntries.find(
-      (e) => e.status === 'pending' || e.status === 'partial' || e.status === 'overdue'
+      (e) => e.status === 'unpaid' || e.status === 'partial' || e.status === 'overdue'
     ) || null
   }
 
@@ -263,6 +263,17 @@ export default async function BuyerDetailPage({
             <CardTitle>Plot Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {buyer.estates?.name && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-emerald-50 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Estate</p>
+                  <p className="text-sm text-gray-900">{buyer.estates.name}</p>
+                </div>
+              </div>
+            )}
             {buyer.plot_location && (
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
@@ -376,8 +387,8 @@ export default async function BuyerDetailPage({
                         <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(entry.expected_amount)}</td>
                         <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(entry.paid_amount)}</td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${SCHEDULE_STATUS_COLORS[entry.status] || SCHEDULE_STATUS_COLORS.pending}`}>
-                            {SCHEDULE_STATUS_LABELS[entry.status] || 'Pending'}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${SCHEDULE_STATUS_COLORS[entry.status] || SCHEDULE_STATUS_COLORS.unpaid}`}>
+                            {SCHEDULE_STATUS_LABELS[entry.status] || 'Unpaid'}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">

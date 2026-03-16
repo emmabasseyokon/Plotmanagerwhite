@@ -155,8 +155,8 @@ export async function POST(
       home_address: data.home_address || null,
       estate_id: data.estate_id,
       plot_location: (estate as any).location || null,
-      plot_size: numberOfPlots > 1 ? `${numberOfPlots} plots` : null,
-      purchase_date: today,
+      plot_size: data.plot_size || (numberOfPlots > 1 ? `${numberOfPlots} plots` : null),
+      purchase_date: data.purchase_date || today,
       total_amount: totalAmount,
       amount_paid: isOutright ? totalAmount : initialDeposit,
       payment_status: isOutright ? 'fully_paid' : 'installment',
@@ -167,9 +167,9 @@ export async function POST(
     if (!isOutright && data.installment_duration) {
       insertData.has_installment_plan = true
       insertData.plan_duration_months = data.installment_duration
-      insertData.plan_start_date = today
+      insertData.plan_start_date = data.plan_start_date || today
       insertData.initial_deposit = initialDeposit
-      insertData.next_payment_date = today
+      insertData.next_payment_date = data.plan_start_date || today
     }
 
     // Convert empty dates to null
@@ -203,7 +203,7 @@ export async function POST(
         total_amount: totalAmount,
         initial_deposit: initialDeposit,
         duration_months: data.installment_duration,
-        start_date: today,
+        start_date: data.plan_start_date || today,
       })
 
       const scheduleEntries = schedule.map((entry) => ({
