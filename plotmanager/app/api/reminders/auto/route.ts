@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         .select('id, buyer_id, installment_number, due_date, expected_amount, paid_amount, status')
         .eq('company_id', comp.id)
         .eq('due_date', targetDateStr)
-        .in('status', ['pending', 'partial'])
+        .in('status', ['unpaid', 'partial'])
 
       if (!entries || entries.length === 0) {
         continue

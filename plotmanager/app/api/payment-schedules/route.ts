@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0]
     const updatedEntries = []
     for (const entry of entries || []) {
-      if ((entry.status === 'pending' || entry.status === 'partial') && entry.due_date < today) {
+      if ((entry.status === 'unpaid' || entry.status === 'partial') && entry.due_date < today) {
         await adminClient
           .from('payment_schedules')
           .update({ status: 'overdue' })

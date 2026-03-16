@@ -29,7 +29,7 @@ export default async function BuyersPage({
 
   let query = supabase
     .from('buyers')
-    .select('id, first_name, last_name, email, phone, plot_location, plot_number, payment_status, total_amount, amount_paid')
+    .select('id, first_name, last_name, email, phone, plot_location, plot_number, payment_status, total_amount, amount_paid, estates(name)')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
 
@@ -56,6 +56,7 @@ export default async function BuyersPage({
     payment_status: string
     total_amount: number
     amount_paid: number
+    estates: { name: string } | null
   }>
 
   const activeStatus = params.status || 'all'
@@ -126,7 +127,7 @@ export default async function BuyersPage({
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Name</th>
-                    <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Plot Location</th>
+                    <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Estate</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Status</th>
                     <th className="text-right text-sm font-medium text-gray-500 px-6 py-4">Total Amount</th>
                     <th className="text-right text-sm font-medium text-gray-500 px-6 py-4">Amount Paid</th>
@@ -142,7 +143,7 @@ export default async function BuyersPage({
                         </Link>
                       </td>
                       <td className="px-6 py-4 text-gray-600">
-                        {buyer.plot_location || 'N/A'}
+                        {buyer.estates?.name || 'N/A'}
                         {buyer.plot_number && <span className="text-gray-400"> (Plot {buyer.plot_number})</span>}
                       </td>
                       <td className="px-6 py-4">
@@ -179,7 +180,7 @@ export default async function BuyersPage({
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mb-2">
-                    {buyer.plot_location || 'No location'}
+                    {buyer.estates?.name || 'No estate'}
                     {buyer.plot_number && ` - Plot ${buyer.plot_number}`}
                   </p>
                   <div className="flex justify-between text-sm">

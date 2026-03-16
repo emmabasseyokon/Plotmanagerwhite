@@ -85,19 +85,80 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (buyerPlan && (buyerPlan as any).has_installment_plan) {
-        let remainingAmount = parsed.data.amount
-
-        // If a specific schedule entry was provided, start there
-        if (parsed.data.schedule_entry_id) {
-          const { data: targetEntry } = await adminClient
+        // If buyer is now fully paid, mark all remaining schedule entries as paid
+        if (newPaymentStatus === 'fully_paid') {
+          const { data: unpaidEntries } = await adminClient
             .from('payment_schedules')
-            .select('*')
-            .eq('id', parsed.data.schedule_entry_id)
+            .select('id, expected_amount')
+            .eq('buyer_id', parsed.data.buyer_id)
             .eq('company_id', companyId)
-            .single()
+            .in('status', ['unpaid', 'partial', 'overdue'])
 
-          if (targetEntry) {
-            const entry = targetEntry as any
+          if (unpaidEntries && unpaidEntries.length > 0) {
+            for (const entry of unpaidEntries) {
+              await adminClient
+                .from('payment_schedules')
+                .update({
+                  paid_amount: (entry as any).expected_amount,
+                  status: 'paid',
+                  payment_id: (payment as any).id,
+                })
+                .eq('id', (entry as any).id)
+            }
+          }
+
+          // Clear next_payment_date since fully paid
+          await adminClient
+            .from('buyers')
+            .update({ next_payment_date: null })
+            .eq('id', parsed.data.buyer_id)
+        } else {
+          let remainingAmount = parsed.data.amount
+
+          // If a specific schedule entry was provided, start there
+          if (parsed.data.schedule_entry_id) {
+            const { data: targetEntry } = await adminClient
+              .from('payment_schedules')
+              .select('*')
+              .eq('id', parsed.data.schedule_entry_id)
+              .eq('company_id', companyId)
+              .single()
+
+            if (targetEntry) {
+              const entry = targetEntry as any
+              const entryRemaining = entry.expected_amount - entry.paid_amount
+              const applyAmount = Math.min(remainingAmount, entryRemaining)
+              const newPaidAmount = entry.paid_amount + applyAmount
+              const entryStatus = newPaidAmount >= entry.expected_amount ? 'paid' : 'partial'
+
+              await adminClient
+                .from('payment_schedules')
+                .update({
+                  paid_amount: newPaidAmount,
+                  status: entryStatus,
+                  payment_id: (payment as any).id,
+                })
+                .eq('id', entry.id)
+
+              remainingAmount -= applyAmount
+            }
+          }
+
+          // Apply remaining amount to next unpaid entries (cascade overflow)
+          while (remainingAmount > 0) {
+            const { data: nextEntry } = await adminClient
+              .from('payment_schedules')
+              .select('*')
+              .eq('buyer_id', parsed.data.buyer_id)
+              .eq('company_id', companyId)
+              .in('status', ['unpaid', 'partial', 'overdue'])
+              .order('installment_number', { ascending: true })
+              .limit(1)
+              .single()
+
+            if (!nextEntry) break
+
+            const entry = nextEntry as any
             const entryRemaining = entry.expected_amount - entry.paid_amount
             const applyAmount = Math.min(remainingAmount, entryRemaining)
             const newPaidAmount = entry.paid_amount + applyAmount
@@ -114,56 +175,24 @@ export async function POST(request: NextRequest) {
 
             remainingAmount -= applyAmount
           }
-        }
 
-        // Apply remaining amount to next unpaid entries (cascade overflow)
-        while (remainingAmount > 0) {
-          const { data: nextEntry } = await adminClient
+          // Update buyer's next_payment_date to next unpaid installment
+          const { data: nextDue } = await adminClient
             .from('payment_schedules')
-            .select('*')
+            .select('due_date')
             .eq('buyer_id', parsed.data.buyer_id)
             .eq('company_id', companyId)
-            .in('status', ['pending', 'partial', 'overdue'])
+            .in('status', ['unpaid', 'partial', 'overdue'])
             .order('installment_number', { ascending: true })
             .limit(1)
             .single()
 
-          if (!nextEntry) break
-
-          const entry = nextEntry as any
-          const entryRemaining = entry.expected_amount - entry.paid_amount
-          const applyAmount = Math.min(remainingAmount, entryRemaining)
-          const newPaidAmount = entry.paid_amount + applyAmount
-          const entryStatus = newPaidAmount >= entry.expected_amount ? 'paid' : 'partial'
-
-          await adminClient
-            .from('payment_schedules')
-            .update({
-              paid_amount: newPaidAmount,
-              status: entryStatus,
-              payment_id: (payment as any).id,
-            })
-            .eq('id', entry.id)
-
-          remainingAmount -= applyAmount
-        }
-
-        // Update buyer's next_payment_date to next unpaid installment
-        const { data: nextDue } = await adminClient
-          .from('payment_schedules')
-          .select('due_date')
-          .eq('buyer_id', parsed.data.buyer_id)
-          .eq('company_id', companyId)
-          .in('status', ['pending', 'partial', 'overdue'])
-          .order('installment_number', { ascending: true })
-          .limit(1)
-          .single()
-
-        if (nextDue) {
-          await adminClient
-            .from('buyers')
-            .update({ next_payment_date: (nextDue as any).due_date })
-            .eq('id', parsed.data.buyer_id)
+          if (nextDue) {
+            await adminClient
+              .from('buyers')
+              .update({ next_payment_date: (nextDue as any).due_date })
+              .eq('id', parsed.data.buyer_id)
+          }
         }
       }
     }

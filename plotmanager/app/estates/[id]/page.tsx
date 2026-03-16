@@ -82,7 +82,7 @@ export default async function EstateDetailPage({ params }: EstateDetailProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image */}
-          <div className="relative h-64 sm:h-96 lg:h-full min-h-[400px] bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl overflow-hidden">
+          <div className="relative h-80 sm:h-[500px] lg:h-full min-h-[500px] bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl overflow-hidden">
             {estate.image_url ? (
               <Image
                 src={estate.image_url}

@@ -84,7 +84,7 @@ export const paymentScheduleSchema = z.object({
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   expected_amount: z.number().positive(),
   paid_amount: z.number().min(0).default(0),
-  status: z.enum(['pending', 'paid', 'partial', 'overdue']).default('pending'),
+  status: z.enum(['unpaid', 'paid', 'partial', 'overdue']).default('unpaid'),
   payment_id: z.string().uuid().nullable().optional(),
 })
 

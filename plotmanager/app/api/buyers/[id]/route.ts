@@ -129,7 +129,7 @@ export async function PUT(
         .delete()
         .eq('buyer_id', id)
         .eq('company_id', companyId)
-        .in('status', ['pending', 'overdue'])
+        .in('status', ['unpaid', 'overdue'])
 
       const schedule = generateInstallmentSchedule({
         total_amount: totalAmount,
