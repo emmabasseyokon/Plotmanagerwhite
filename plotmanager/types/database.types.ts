@@ -20,18 +20,28 @@ export type Database = {
           company_id: string
           created_at: string | null
           documents: Json | null
+          city: string | null
           email: string | null
           estate_id: string | null
           first_name: string
+          gender: string | null
           has_installment_plan: boolean | null
           home_address: string | null
           id: string
           initial_deposit: number | null
           last_name: string
+          next_of_kin_address: string | null
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
+          next_of_kin_relationship: string | null
           next_payment_date: string | null
           notes: string | null
+          number_of_plots: number | null
           payment_status: string
           phone: string | null
+          referral_phone: string | null
+          referral_source: string | null
+          state: string | null
           plan_duration_months: number | null
           plan_start_date: string | null
           plot_location: string | null
@@ -46,18 +56,28 @@ export type Database = {
           company_id: string
           created_at?: string | null
           documents?: Json | null
+          city?: string | null
           email?: string | null
           estate_id?: string | null
           first_name: string
+          gender?: string | null
           has_installment_plan?: boolean | null
           home_address?: string | null
           id?: string
           initial_deposit?: number | null
           last_name: string
+          next_of_kin_address?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          next_of_kin_relationship?: string | null
           next_payment_date?: string | null
           notes?: string | null
+          number_of_plots?: number | null
           payment_status?: string
           phone?: string | null
+          referral_phone?: string | null
+          referral_source?: string | null
+          state?: string | null
           plan_duration_months?: number | null
           plan_start_date?: string | null
           plot_location?: string | null
@@ -72,18 +92,28 @@ export type Database = {
           company_id?: string
           created_at?: string | null
           documents?: Json | null
+          city?: string | null
           email?: string | null
           estate_id?: string | null
           first_name?: string
+          gender?: string | null
           has_installment_plan?: boolean | null
           home_address?: string | null
           id?: string
           initial_deposit?: number | null
           last_name?: string
+          next_of_kin_address?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          next_of_kin_relationship?: string | null
           next_payment_date?: string | null
           notes?: string | null
+          number_of_plots?: number | null
           payment_status?: string
           phone?: string | null
+          referral_phone?: string | null
+          referral_source?: string | null
+          state?: string | null
           plan_duration_months?: number | null
           plan_start_date?: string | null
           plot_location?: string | null

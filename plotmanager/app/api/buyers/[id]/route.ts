@@ -61,10 +61,9 @@ export async function PUT(
     const updateData: any = { ...updateFields }
     if (updateData.estate_id === '') delete updateData.estate_id
 
-    // Convert empty string dates to null (PostgreSQL rejects "" for DATE columns)
-    const dateFields = ['purchase_date', 'next_payment_date', 'plan_start_date']
-    for (const field of dateFields) {
-      if (updateData[field] === '') updateData[field] = null
+    // Convert empty strings to null for DB compatibility
+    for (const key of Object.keys(updateData)) {
+      if (updateData[key] === '') updateData[key] = null
     }
 
     // Handle installment plan changes

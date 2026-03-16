@@ -8,9 +8,9 @@ import { buyerSchema, type BuyerFormData } from '@/lib/validations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
-import { ArrowLeft, CalendarDays } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { NIGERIAN_STATES, REFERRAL_OPTIONS } from '@/lib/constants'
 import Link from 'next/link'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 import { formatCurrency } from '@/lib/utils'
@@ -46,15 +46,25 @@ export default function NewBuyerPage() {
       last_name: '',
       email: '',
       phone: '',
+      gender: '',
       home_address: '',
+      city: '',
+      state: '',
       plot_size: '',
       plot_location: '',
       plot_number: '',
+      number_of_plots: 1,
       purchase_date: '',
       total_amount: 0,
       amount_paid: 0,
       next_payment_date: '',
       payment_status: 'installment',
+      next_of_kin_name: '',
+      next_of_kin_phone: '',
+      next_of_kin_address: '',
+      next_of_kin_relationship: '',
+      referral_source: '',
+      referral_phone: '',
       notes: '',
       estate_id: '',
     },
@@ -193,12 +203,43 @@ export default function NewBuyerPage() {
                 {...register('phone')}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+              <select
+                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {...register('gender')}
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
             <Input
               label="Home Address"
               placeholder="123 Main Street, Lagos"
               error={errors.home_address?.message}
               {...register('home_address')}
             />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="City"
+                placeholder="Lagos"
+                {...register('city')}
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">State</label>
+                <select
+                  className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  {...register('state')}
+                >
+                  <option value="">Select state</option>
+                  {NIGERIAN_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -406,6 +447,73 @@ export default function NewBuyerPage() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Next of Kin */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Next of Kin Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Next of Kin Name"
+                placeholder="Jane Doe"
+                {...register('next_of_kin_name')}
+              />
+              <Input
+                label="Phone Number"
+                placeholder="08012345678"
+                {...register('next_of_kin_phone')}
+              />
+            </div>
+            <Input
+              label="Address"
+              placeholder="Next of kin address"
+              {...register('next_of_kin_address')}
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Relationship</label>
+              <select
+                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {...register('next_of_kin_relationship')}
+              >
+                <option value="">Select relationship</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Parent">Parent</option>
+                <option value="Sibling">Sibling</option>
+                <option value="Child">Child</option>
+                <option value="Friend">Friend</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Referral */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Referral Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">How did they hear about us?</label>
+              <select
+                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {...register('referral_source')}
+              >
+                <option value="">Select</option>
+                {REFERRAL_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label="Referrer Phone Number"
+              placeholder="Phone number of who referred them"
+              {...register('referral_phone')}
+            />
           </CardContent>
         </Card>
 

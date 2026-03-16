@@ -58,10 +58,9 @@ export async function POST(request: NextRequest) {
     const insertData: any = { ...buyerFields, company_id: companyId }
     if (!insertData.estate_id) delete insertData.estate_id
 
-    // Convert empty string dates to null (PostgreSQL rejects "" for DATE columns)
-    const dateFields = ['purchase_date', 'next_payment_date', 'plan_start_date']
-    for (const field of dateFields) {
-      if (insertData[field] === '') insertData[field] = null
+    // Convert empty strings to null for DB compatibility
+    for (const key of Object.keys(insertData)) {
+      if (insertData[key] === '') insertData[key] = null
     }
 
     // Add installment plan metadata to buyer if enabled

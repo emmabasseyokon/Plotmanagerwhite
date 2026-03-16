@@ -122,26 +122,6 @@ export async function POST(
     const numberOfPlots = data.number_of_plots || 1
     const totalAmount = pricePerPlot * numberOfPlots
 
-    // Build notes with next-of-kin and referral info
-    const notesParts: string[] = []
-    if (data.notes) notesParts.push(data.notes)
-    if (data.gender) notesParts.push(`Gender: ${data.gender}`)
-    if (data.city || data.state) notesParts.push(`Location: ${[data.city, data.state].filter(Boolean).join(', ')}`)
-    if (data.next_of_kin_name) {
-      notesParts.push(
-        `Next of Kin: ${data.next_of_kin_name}` +
-        (data.next_of_kin_relationship ? ` (${data.next_of_kin_relationship})` : '') +
-        (data.next_of_kin_phone ? ` - ${data.next_of_kin_phone}` : '') +
-        (data.next_of_kin_address ? ` - ${data.next_of_kin_address}` : '')
-      )
-    }
-    if (data.referral_source) {
-      notesParts.push(
-        `Referral: ${data.referral_source}` +
-        (data.referral_phone ? ` (${data.referral_phone})` : '')
-      )
-    }
-
     const today = new Date().toISOString().split('T')[0]
     const isOutright = data.payment_type === 'outright'
     const initialDeposit = data.initial_deposit || 0
@@ -152,15 +132,25 @@ export async function POST(
       last_name: data.last_name,
       email: data.email,
       phone: data.phone,
+      gender: data.gender || null,
       home_address: data.home_address || null,
+      city: data.city || null,
+      state: data.state || null,
       estate_id: data.estate_id,
       plot_location: (estate as any).location || null,
-      plot_size: data.plot_size || (numberOfPlots > 1 ? `${numberOfPlots} plots` : null),
+      plot_size: data.plot_size || null,
+      number_of_plots: numberOfPlots,
       purchase_date: data.purchase_date || today,
       total_amount: totalAmount,
       amount_paid: isOutright ? totalAmount : initialDeposit,
       payment_status: isOutright ? 'fully_paid' : 'installment',
-      notes: notesParts.length > 0 ? notesParts.join('\n') : null,
+      next_of_kin_name: data.next_of_kin_name || null,
+      next_of_kin_phone: data.next_of_kin_phone || null,
+      next_of_kin_address: data.next_of_kin_address || null,
+      next_of_kin_relationship: data.next_of_kin_relationship || null,
+      referral_source: data.referral_source || null,
+      referral_phone: data.referral_phone || null,
+      notes: data.notes || null,
     }
 
     // Installment plan metadata

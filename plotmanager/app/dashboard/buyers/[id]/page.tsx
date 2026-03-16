@@ -55,10 +55,14 @@ export default async function BuyerDetailPage({
     last_name: string
     email: string | null
     phone: string | null
+    gender: string | null
     home_address: string | null
+    city: string | null
+    state: string | null
     plot_size: string | null
     plot_location: string | null
     plot_number: string | null
+    number_of_plots: number | null
     purchase_date: string | null
     total_amount: number
     amount_paid: number
@@ -71,6 +75,12 @@ export default async function BuyerDetailPage({
     plan_duration_months: number | null
     plan_start_date: string | null
     initial_deposit: number | null
+    next_of_kin_name: string | null
+    next_of_kin_phone: string | null
+    next_of_kin_address: string | null
+    next_of_kin_relationship: string | null
+    referral_source: string | null
+    referral_phone: string | null
     estates: { name: string } | null
   }
 
@@ -240,6 +250,17 @@ export default async function BuyerDetailPage({
                 </div>
               </div>
             )}
+            {buyer.gender && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-pink-50 rounded-lg flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-pink-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Gender</p>
+                  <p className="text-sm text-gray-900 capitalize">{buyer.gender}</p>
+                </div>
+              </div>
+            )}
             {buyer.home_address && (
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-purple-50 rounded-lg flex items-center justify-center">
@@ -248,6 +269,17 @@ export default async function BuyerDetailPage({
                 <div>
                   <p className="text-xs text-gray-500">Home Address</p>
                   <p className="text-sm text-gray-900">{buyer.home_address}</p>
+                </div>
+              </div>
+            )}
+            {(buyer.city || buyer.state) && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-cyan-50 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">City / State</p>
+                  <p className="text-sm text-gray-900">{[buyer.city, buyer.state].filter(Boolean).join(', ')}</p>
                 </div>
               </div>
             )}
@@ -332,6 +364,61 @@ export default async function BuyerDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Next of Kin & Referral */}
+      {(buyer.next_of_kin_name || buyer.referral_source) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {buyer.next_of_kin_name && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Next of Kin</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-sm text-gray-900">
+                    {buyer.next_of_kin_name}
+                    {buyer.next_of_kin_relationship && (
+                      <span className="text-gray-500"> ({buyer.next_of_kin_relationship})</span>
+                    )}
+                  </p>
+                </div>
+                {buyer.next_of_kin_phone && (
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="text-sm text-gray-900">{buyer.next_of_kin_phone}</p>
+                  </div>
+                )}
+                {buyer.next_of_kin_address && (
+                  <div>
+                    <p className="text-xs text-gray-500">Address</p>
+                    <p className="text-sm text-gray-900">{buyer.next_of_kin_address}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          {buyer.referral_source && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Referral</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500">Source</p>
+                  <p className="text-sm text-gray-900">{buyer.referral_source}</p>
+                </div>
+                {buyer.referral_phone && (
+                  <div>
+                    <p className="text-xs text-gray-500">Referrer Phone</p>
+                    <p className="text-sm text-gray-900">{buyer.referral_phone}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Notes */}
       {buyer.notes && (
