@@ -21,7 +21,7 @@ export function generateInstallmentSchedule(params: {
   const lastAmount = remaining > 0 ? remaining - monthly * (duration_months - 1) : 0
 
   for (let i = 0; i < duration_months; i++) {
-    const date = new Date(year, month - 1 + i, day)
+    const date = new Date(year, month - 1 + i + 1, day)
     const dateStr = formatDate(date)
 
     entries.push({

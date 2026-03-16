@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PublicBuyerForm } from '@/components/PublicBuyerForm'
 import { MapPin } from 'lucide-react'
+import Link from 'next/link'
 
 interface FormPageProps {
   params: Promise<{ slug: string }>
@@ -60,7 +61,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-3xl mx-auto px-4 py-5">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
               <MapPin className="w-5 h-5 text-white" />
             </div>
@@ -68,7 +69,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
               <h1 className="font-display text-xl font-bold text-gray-900">{company.name}</h1>
               <p className="text-sm text-gray-500">Land Subscription Form</p>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
