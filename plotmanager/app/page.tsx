@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { APP_COMPANY_ID, APP_NAME, APP_COMPANY_SLUG } from '@/lib/config'
 import { MapPin, Phone, Mail, ArrowRight, CheckCircle2, Quote } from 'lucide-react'
+import { LandingNav } from '@/components/LandingNav'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -37,33 +38,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-display text-xl font-bold text-gray-900">{companyName}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <a href="#estates" className="hidden sm:block text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
-                Estates
-              </a>
-              <a href="#contact" className="hidden sm:block text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
-                Contact
-              </a>
-              <Link
-                href="/login"
-                className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
-              >
-                Admin
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <LandingNav companyName={companyName} />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary-50 via-white to-secondary-50 overflow-hidden">
