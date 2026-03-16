@@ -69,10 +69,11 @@ CREATE TABLE IF NOT EXISTS estates (
     name TEXT NOT NULL,
     location TEXT,
     description TEXT,
+    image_url TEXT,
     total_plots INTEGER NOT NULL DEFAULT 0,
     available_plots INTEGER NOT NULL DEFAULT 0,
     price_per_plot NUMERIC(15, 2) DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'sold_out', 'inactive')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'sold_out', 'coming_soon')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -211,10 +212,12 @@ CREATE POLICY "Users can view own company"
     ON companies FOR SELECT TO authenticated
     USING (id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
 
--- Profiles: admins can see profiles in their company
-CREATE POLICY "Users can view own company profiles"
+-- Profiles: users can only view their own profile (non-recursive)
+-- NOTE: Do NOT use a subquery on profiles itself here — that causes
+-- PostgreSQL infinite recursion when evaluating the RLS policy.
+CREATE POLICY "Users can view own profile"
     ON profiles FOR SELECT TO authenticated
-    USING (company_id IN (SELECT company_id FROM profiles p WHERE p.id = auth.uid()));
+    USING (id = auth.uid());
 
 CREATE POLICY "Users can update own profile"
     ON profiles FOR UPDATE TO authenticated
@@ -329,7 +332,36 @@ CREATE POLICY "Service role full access to reminders"
     USING (true) WITH CHECK (true);
 
 -- ============================================
--- 10. SEED: Pre-create the company
+-- 10. STORAGE: Estate images bucket & policies
+-- ============================================
+
+-- Create the storage bucket for estate images (public read)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('estates', 'estates', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload images
+CREATE POLICY "Authenticated users can upload estate images"
+    ON storage.objects FOR INSERT TO authenticated
+    WITH CHECK (bucket_id = 'estates');
+
+-- Allow authenticated users to update their uploads
+CREATE POLICY "Authenticated users can update estate images"
+    ON storage.objects FOR UPDATE TO authenticated
+    USING (bucket_id = 'estates');
+
+-- Allow authenticated users to delete images
+CREATE POLICY "Authenticated users can delete estate images"
+    ON storage.objects FOR DELETE TO authenticated
+    USING (bucket_id = 'estates');
+
+-- Allow public read access to estate images
+CREATE POLICY "Public read access to estate images"
+    ON storage.objects FOR SELECT TO public
+    USING (bucket_id = 'estates');
+
+-- ============================================
+-- 11. SEED: Pre-create the company
 -- Replace these values with the client's details
 -- Then set APP_COMPANY_ID in .env.local to the generated UUID
 -- ============================================

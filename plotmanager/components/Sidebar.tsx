@@ -84,7 +84,7 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
           <p className="text-xs text-gray-500 mt-1">Signed in</p>
         </div>
         <a
-          href="https://wa.me/2349094579266?text=Hi%2C%20I%20need%20help%20with%20PlotManager"
+          href={`https://wa.me/2349094579266?text=${encodeURIComponent(`Hi, I need help with ${appName}`)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-green-700 hover:bg-green-50 transition-all"
