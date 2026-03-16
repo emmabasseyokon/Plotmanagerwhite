@@ -1,3 +1,5 @@
+import { getThemeColor } from './theme'
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -7,13 +9,14 @@ function escapeHtml(str: string): string {
 }
 
 function baseLayout(companyName: string, content: string): string {
+  const brandColor = getThemeColor()
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     <div style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-      <div style="background-color:#16a34a;padding:24px 32px;">
+      <div style="background-color:${brandColor};padding:24px 32px;">
         <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">${escapeHtml(companyName)}</h1>
       </div>
       <div style="padding:32px;">

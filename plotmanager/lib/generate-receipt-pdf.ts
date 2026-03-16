@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatCurrency, formatDate } from './utils'
 import { PAYMENT_METHOD_LABELS } from './constants'
+import { getThemeColorRgb } from './theme'
 
 export interface ReceiptData {
   companyName: string
@@ -30,10 +31,11 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 20
+  const brandRgb = getThemeColorRgb()
   let y = 0
 
   // --- Header band ---
-  doc.setFillColor(22, 163, 74) // green-600
+  doc.setFillColor(brandRgb[0], brandRgb[1], brandRgb[2])
   doc.rect(0, 0, pageWidth, 40, 'F')
 
   doc.setTextColor(255, 255, 255)
@@ -148,7 +150,7 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
     body: paymentRows,
     theme: 'striped',
     headStyles: {
-      fillColor: [22, 163, 74],
+      fillColor: brandRgb,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 10,
@@ -174,7 +176,7 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
     ],
     theme: 'striped',
     headStyles: {
-      fillColor: [22, 163, 74],
+      fillColor: brandRgb,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 10,
