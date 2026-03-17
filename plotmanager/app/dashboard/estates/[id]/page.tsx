@@ -97,9 +97,6 @@ export default async function EstateDetailPage({
             <h1 className="font-display text-3xl font-bold text-gray-900">
               {estate.name}
             </h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[estate.status] || statusColors.active}`}>
-              {statusLabels[estate.status] || 'Active'}
-            </span>
           </div>
           <p className="text-gray-500 mt-1">
             Added {formatDate(estate.created_at)}
@@ -182,6 +179,17 @@ export default async function EstateDetailPage({
                 <p className="text-sm text-gray-900">
                   {formatCurrency((estate.price_per_plot || 0) * estate.total_plots)}
                 </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                <Building className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Status</p>
+                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusColors[estate.status] || statusColors.active}`}>
+                  {statusLabels[estate.status] || 'Active'}
+                </span>
               </div>
             </div>
             {estate.description && (
