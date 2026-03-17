@@ -26,12 +26,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Estate not found' }, { status: 404 })
     }
 
-    // Fetch buyers with email in this estate
+    // Fetch selected buyers with email in this estate
     const { data: buyers } = await adminClient
       .from('buyers')
       .select('id, email, first_name, last_name')
       .eq('estate_id', parsed.data.estate_id)
       .eq('company_id', companyId)
+      .in('id', parsed.data.buyer_ids)
       .not('email', 'is', null)
       .neq('email', '')
 

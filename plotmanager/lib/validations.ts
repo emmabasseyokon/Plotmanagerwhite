@@ -117,6 +117,7 @@ export const broadcastSchema = z.object({
   estate_id: z.string().uuid('Invalid estate'),
   subject: z.string().min(1, 'Subject is required').max(200),
   message: z.string().min(1, 'Message is required').max(5000),
+  buyer_ids: z.array(z.string().uuid()).min(1, 'Select at least one buyer'),
 })
 
 export type BroadcastFormData = z.infer<typeof broadcastSchema>

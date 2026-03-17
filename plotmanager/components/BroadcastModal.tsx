@@ -35,6 +35,7 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
   const [estateId, setEstateId] = useState('')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
+  const [selectedBuyerIds, setSelectedBuyerIds] = useState<Set<string>>(new Set())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null)
@@ -45,6 +46,30 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
   }, [estateId, buyers])
 
   const buyersWithEmail = useMemo(() => estateBuyers.filter((b) => b.email), [estateBuyers])
+
+  const handleEstateChange = (newEstateId: string) => {
+    setEstateId(newEstateId)
+    // Auto-select all buyers with email in the new estate
+    const emailBuyers = buyers.filter((b) => b.estate_id === newEstateId && b.email)
+    setSelectedBuyerIds(new Set(emailBuyers.map((b) => b.id)))
+  }
+
+  const toggleBuyer = (buyerId: string) => {
+    setSelectedBuyerIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(buyerId)) next.delete(buyerId)
+      else next.add(buyerId)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    if (selectedBuyerIds.size === buyersWithEmail.length) {
+      setSelectedBuyerIds(new Set())
+    } else {
+      setSelectedBuyerIds(new Set(buyersWithEmail.map((b) => b.id)))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,6 +85,7 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
           estate_id: estateId,
           subject,
           message,
+          buyer_ids: Array.from(selectedBuyerIds),
         }),
       })
 
@@ -83,6 +109,7 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
       setEstateId('')
       setSubject('')
       setMessage('')
+      setSelectedBuyerIds(new Set())
       setError(null)
       setResult(null)
       onClose()
@@ -114,7 +141,7 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
           <select
             className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             value={estateId}
-            onChange={(e) => setEstateId(e.target.value)}
+            onChange={(e) => handleEstateChange(e.target.value)}
             required
           >
             <option value="">Select an estate</option>
@@ -129,36 +156,57 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
         {/* Buyers in selected estate */}
         {estateId && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Buyers in this estate ({estateBuyers.length})
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Buyers in this estate ({estateBuyers.length})
+              </label>
+              {buyersWithEmail.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  {selectedBuyerIds.size === buyersWithEmail.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
             {estateBuyers.length > 0 ? (
               <div className="border-2 border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
-                {estateBuyers.map((buyer) => (
-                  <div key={buyer.id} className="flex items-center justify-between px-3 py-2">
-                    <div className="min-w-0">
-                      <p className={`text-sm font-medium truncate ${buyer.email ? 'text-gray-900' : 'text-gray-400'}`}>
-                        {buyer.first_name} {buyer.last_name}
-                        {!buyer.email && <span className="text-xs ml-1">(no email)</span>}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
-                        {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
-                        {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                {estateBuyers.map((buyer) => {
+                  const hasEmail = !!buyer.email
+                  return (
+                    <label
+                      key={buyer.id}
+                      className={`flex items-center gap-3 px-3 py-2 ${hasEmail ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedBuyerIds.has(buyer.id)}
+                        onChange={() => toggleBuyer(buyer.id)}
+                        disabled={!hasEmail}
+                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-medium truncate ${hasEmail ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {buyer.first_name} {buyer.last_name}
+                          {!hasEmail && <span className="text-xs ml-1">(no email)</span>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                          {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
+                          {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
+                        </span>
+                      </div>
+                    </label>
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-gray-400">No buyers in this estate.</p>
             )}
-            <p className="text-xs text-gray-400 mt-1">
-              Message will be sent to {buyersWithEmail.length} buyer{buyersWithEmail.length !== 1 ? 's' : ''} with email addresses.
-            </p>
           </div>
         )}
 
