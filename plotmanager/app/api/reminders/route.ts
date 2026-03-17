@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { reminderSchema } from '@/lib/validations'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
-import { paymentReminderHtml } from '@/lib/email-templates'
+import { paymentReminderHtml, broadcastEmailHtml } from '@/lib/email-templates'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
@@ -88,22 +88,35 @@ export async function POST(request: NextRequest) {
     let emailSent = false
     let emailError: string | null = null
 
-    try {
-      await getResend().emails.send({
-        from: FROM_EMAIL,
-        to: buyer.email,
-        subject: `Payment Reminder from ${companyName}`,
-        html: paymentReminderHtml({
+    const isCustom = parsed.data.reminder_type === 'custom'
+    const emailSubject = isCustom
+      ? `Message from ${companyName}`
+      : `Payment Reminder from ${companyName}`
+    const emailHtml = isCustom
+      ? broadcastEmailHtml({
+          buyerFirstName: buyer.first_name,
+          companyName,
+          subject: emailSubject,
+          messageBody: parsed.data.message,
+        })
+      : paymentReminderHtml({
           buyerFirstName: buyer.first_name,
           companyName,
           amountDue: formatCurrency(amountDue),
           dueDate: dueDate ? formatDate(dueDate) : 'N/A',
           isOverdue,
-        }),
+        })
+
+    try {
+      await getResend().emails.send({
+        from: FROM_EMAIL,
+        to: buyer.email,
+        subject: emailSubject,
+        html: emailHtml,
       })
       emailSent = true
-    } catch (err: any) {
-      emailError = err.message || 'Failed to send email'
+    } catch (err: unknown) {
+      emailError = err instanceof Error ? err.message : 'Failed to send email'
     }
 
     // Record reminder
