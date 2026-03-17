@@ -63,6 +63,23 @@ export default async function RemindersPage() {
 
   const estates = (estatesRaw || []) as Array<{ id: string; name: string }>
 
+  // Fetch buyers for broadcast preview
+  const { data: buyersRaw } = await adminClient
+    .from('buyers')
+    .select('id, first_name, last_name, email, estate_id, payment_status, allocation_status')
+    .eq('company_id', companyId)
+    .order('first_name')
+
+  const buyers = (buyersRaw || []) as Array<{
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    estate_id: string | null
+    payment_status: string
+    allocation_status: string
+  }>
+
   // Fetch company reminder settings
   const { data: companySettings } = await adminClient
     .from('companies')
@@ -81,7 +98,7 @@ export default async function RemindersPage() {
           <h1 className="text-2xl font-display font-bold text-gray-900">Reminders</h1>
           <p className="text-gray-500 mt-1">Send payment reminders and broadcast announcements</p>
         </div>
-        <ReminderActions estates={estates} canBroadcast={true} />
+        <ReminderActions estates={estates} buyers={buyers} canBroadcast={true} />
       </div>
 
       {/* Auto-Reminder Settings */}

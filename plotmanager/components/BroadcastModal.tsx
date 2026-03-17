@@ -1,24 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Send } from 'lucide-react'
+import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS, ALLOCATION_STATUS_COLORS, ALLOCATION_STATUS_LABELS } from '@/lib/constants'
 
 interface Estate {
   id: string
   name: string
 }
 
+interface BuyerPreview {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  estate_id: string | null
+  payment_status: string
+  allocation_status: string
+}
+
 interface BroadcastModalProps {
   estates: Estate[]
+  buyers: BuyerPreview[]
   isOpen: boolean
   onClose: () => void
 }
 
-export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps) {
+export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastModalProps) {
   const router = useRouter()
   const [estateId, setEstateId] = useState('')
   const [subject, setSubject] = useState('')
@@ -26,6 +38,13 @@ export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null)
+
+  const estateBuyers = useMemo(() => {
+    if (!estateId) return []
+    return buyers.filter((b) => b.estate_id === estateId)
+  }, [estateId, buyers])
+
+  const buyersWithEmail = useMemo(() => estateBuyers.filter((b) => b.email), [estateBuyers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,8 +71,8 @@ export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps
 
       setResult(data)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }
@@ -71,7 +90,7 @@ export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Send Broadcast Email">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Send Broadcast Message">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
@@ -82,7 +101,7 @@ export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps
         {result && (
           <div className={`rounded-lg p-3 text-sm border ${result.failed > 0 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
             <p className="font-medium">
-              {result.sent} of {result.total} emails sent successfully
+              {result.sent} of {result.total} messages sent successfully
               {result.failed > 0 && ` (${result.failed} failed)`}
             </p>
           </div>
@@ -105,8 +124,43 @@ export function BroadcastModal({ estates, isOpen, onClose }: BroadcastModalProps
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-400 mt-1">Email will be sent to all buyers with email addresses in this estate.</p>
         </div>
+
+        {/* Buyers in selected estate */}
+        {estateId && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Buyers in this estate ({estateBuyers.length})
+            </label>
+            {estateBuyers.length > 0 ? (
+              <div className="border-2 border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
+                {estateBuyers.map((buyer) => (
+                  <div key={buyer.id} className="flex items-center justify-between px-3 py-2">
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium truncate ${buyer.email ? 'text-gray-900' : 'text-gray-400'}`}>
+                        {buyer.first_name} {buyer.last_name}
+                        {!buyer.email && <span className="text-xs ml-1">(no email)</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                        {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
+                        {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No buyers in this estate.</p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">
+              Message will be sent to {buyersWithEmail.length} buyer{buyersWithEmail.length !== 1 ? 's' : ''} with email addresses.
+            </p>
+          </div>
+        )}
 
         <Input
           label="Subject *"

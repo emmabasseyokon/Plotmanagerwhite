@@ -30,10 +30,13 @@ export function SendReminder({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
+  const isFullyPaid = paymentStatus === 'fully_paid'
   const isOverdue = paymentStatus === 'overdue'
-  const defaultMessage = isOverdue
-    ? `Dear ${buyerName}, this is a reminder that your payment of ${formatCurrency(outstandingBalance)} was due on ${nextPaymentDate ? formatDate(nextPaymentDate) : 'a previous date'} and is now overdue. Please make your payment at your earliest convenience.`
-    : `Dear ${buyerName}, this is a reminder that your upcoming payment of ${formatCurrency(outstandingBalance)} is due on ${nextPaymentDate ? formatDate(nextPaymentDate) : 'your next payment date'}. Please ensure timely payment.`
+  const defaultMessage = isFullyPaid
+    ? `Dear ${buyerName},`
+    : isOverdue
+      ? `Dear ${buyerName}, this is a reminder that your payment of ${formatCurrency(outstandingBalance)} was due on ${nextPaymentDate ? formatDate(nextPaymentDate) : 'a previous date'} and is now overdue. Please make your payment at your earliest convenience.`
+      : `Dear ${buyerName}, this is a reminder that your upcoming payment of ${formatCurrency(outstandingBalance)} is due on ${nextPaymentDate ? formatDate(nextPaymentDate) : 'your next payment date'}. Please ensure timely payment.`
 
   const [message, setMessage] = useState(defaultMessage)
 
@@ -55,7 +58,7 @@ export function SendReminder({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           buyer_id: buyerId,
-          reminder_type: 'payment_due',
+          reminder_type: isFullyPaid ? 'custom' : 'payment_due',
           message,
           sent_via: 'email',
         }),
@@ -83,7 +86,7 @@ export function SendReminder({
     }
   }
 
-  const disabled = !buyerEmail || outstandingBalance <= 0
+  const disabled = !buyerEmail
 
   return (
     <>
@@ -95,16 +98,14 @@ export function SendReminder({
         title={
           !buyerEmail
             ? 'Buyer has no email address'
-            : outstandingBalance <= 0
-              ? 'No outstanding balance'
-              : 'Send payment reminder email'
+            : 'Send message to buyer'
         }
       >
         <Mail className="w-4 h-4 mr-2" />
-        Send Reminder
+        Send Message
       </Button>
 
-      <Modal isOpen={isOpen} onClose={() => !isSubmitting && setIsOpen(false)} title="Send Payment Reminder">
+      <Modal isOpen={isOpen} onClose={() => !isSubmitting && setIsOpen(false)} title="Send Message">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
@@ -114,14 +115,14 @@ export function SendReminder({
 
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-              Reminder sent successfully to {buyerEmail}
+              Message sent successfully to {buyerEmail}
             </div>
           )}
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
             <p className="font-medium mb-1">Sending to: {buyerEmail}</p>
-            <p>Outstanding: {formatCurrency(outstandingBalance)}</p>
-            {nextPaymentDate && <p>Due date: {formatDate(nextPaymentDate)}</p>}
+            {!isFullyPaid && <p>Outstanding: {formatCurrency(outstandingBalance)}</p>}
+            {!isFullyPaid && nextPaymentDate && <p>Due date: {formatDate(nextPaymentDate)}</p>}
           </div>
 
           <div>
@@ -143,7 +144,7 @@ export function SendReminder({
             </Button>
             <Button type="submit" isLoading={isSubmitting} disabled={success}>
               <Mail className="w-4 h-4 mr-2" />
-              Send Email
+              Send Message
             </Button>
           </div>
         </form>
