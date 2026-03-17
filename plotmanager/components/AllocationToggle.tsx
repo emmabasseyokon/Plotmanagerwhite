@@ -30,7 +30,8 @@ export function AllocationToggle({ buyerId, currentStatus }: AllocationTogglePro
       setStatus(newStatus)
       router.refresh()
     } catch {
-      // Revert on failure
+      setStatus(status) // Revert on failure
+      alert('Failed to update allocation status. Please try again.')
     } finally {
       setIsUpdating(false)
     }

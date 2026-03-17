@@ -59,7 +59,14 @@ export async function PUT(
 
     const oldEstateId = existing.estate_id
     const { installment_plan, ...updateFields } = parsed.data
-    const updateData: TablesUpdate<'buyers'> = { ...updateFields }
+    // Only include fields that were actually sent in the request body
+    // to avoid .default() values overwriting existing data
+    const sentKeys = new Set(Object.keys(body))
+    const filteredFields: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(updateFields)) {
+      if (sentKeys.has(key)) filteredFields[key] = value
+    }
+    const updateData: TablesUpdate<'buyers'> = { ...filteredFields }
     if (updateData.estate_id === '') delete updateData.estate_id
 
     // Convert empty strings to null for DB compatibility
