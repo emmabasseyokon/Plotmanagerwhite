@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { BuyerActions } from '@/components/BuyerActions'
 import { RecordPayment } from '@/components/RecordPayment'
 import { ScheduleReminder } from '@/components/ScheduleReminder'
+import { SendReminder } from '@/components/SendReminder'
 import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS, SCHEDULE_STATUS_COLORS, SCHEDULE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/lib/constants'
 
 export default async function BuyerDetailPage({
@@ -165,7 +166,17 @@ export default async function BuyerDetailPage({
             Added {formatDate(buyer.created_at)}
           </p>
         </div>
-        <BuyerActions buyerId={buyer.id} buyerName={`${buyer.first_name} ${buyer.last_name}`} />
+        <div className="flex items-center gap-2">
+          <SendReminder
+            buyerId={buyer.id}
+            buyerName={`${buyer.first_name} ${buyer.last_name}`}
+            buyerEmail={buyer.email}
+            paymentStatus={buyer.payment_status}
+            outstandingBalance={Math.max(outstanding, 0)}
+            nextPaymentDate={buyer.next_payment_date}
+          />
+          <BuyerActions buyerId={buyer.id} buyerName={`${buyer.first_name} ${buyer.last_name}`} />
+        </div>
       </div>
 
       {/* Financial Summary */}
