@@ -162,6 +162,7 @@ export async function POST(
       referral_source: data.referral_source || null,
       referral_phone: data.referral_phone || null,
       notes: data.notes || null,
+      payment_proof_url: data.payment_proof_url || null,
     }
 
     // Installment plan metadata

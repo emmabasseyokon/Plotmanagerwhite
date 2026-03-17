@@ -15,6 +15,7 @@ import { NIGERIAN_STATES, REFERRAL_OPTIONS } from '@/lib/constants'
 import Link from 'next/link'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 import { formatCurrency } from '@/lib/utils'
+import { PaymentProofUpload } from '@/components/PaymentProofUpload'
 
 interface PlotSizeOption {
   size: string
@@ -44,6 +45,7 @@ export default function EditBuyerPage() {
   const [durationMonths, setDurationMonths] = useState(6)
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [initialDeposit, setInitialDeposit] = useState(0)
+  const [paymentProofUrl, setPaymentProofUrl] = useState('')
 
   const {
     register,
@@ -86,6 +88,7 @@ export default function EditBuyerPage() {
           } else if (b.payment_status === 'fully_paid') {
             setPaymentType('outright')
           }
+          setPaymentProofUrl(b.payment_proof_url || '')
           reset({
             first_name: b.first_name || '',
             last_name: b.last_name || '',
@@ -157,6 +160,7 @@ export default function EditBuyerPage() {
     try {
       const payload: Record<string, unknown> = { ...data }
       if (!payload.estate_id) delete payload.estate_id
+      payload.payment_proof_url = paymentProofUrl || ''
 
       // Set payment fields based on payment type
       if (paymentType === 'outright') {
@@ -526,6 +530,11 @@ export default function EditBuyerPage() {
                 )}
               </div>
             )}
+
+            <PaymentProofUpload
+              value={paymentProofUrl}
+              onChange={setPaymentProofUrl}
+            />
           </CardContent>
         </Card>
 

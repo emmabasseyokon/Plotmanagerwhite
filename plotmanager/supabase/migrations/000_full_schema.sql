@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS buyers (
     referral_phone TEXT,
     allocation_status TEXT NOT NULL DEFAULT 'not_allocated'
         CHECK (allocation_status IN ('allocated', 'not_allocated')),
+    payment_proof_url TEXT,
     documents JSONB DEFAULT '[]'::jsonb,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -374,7 +375,37 @@ CREATE POLICY "Public read access to estate images"
     USING (bucket_id = 'estates');
 
 -- ============================================
--- 11. SEED: Pre-create the company
+-- 11. STORAGE: Buyer documents bucket & policies
+-- ============================================
+
+-- Create the storage bucket for buyer documents (public read)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('buyer-documents', 'buyer-documents', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Authenticated users can upload buyer documents"
+    ON storage.objects FOR INSERT TO authenticated
+    WITH CHECK (bucket_id = 'buyer-documents');
+
+CREATE POLICY "Authenticated users can update buyer documents"
+    ON storage.objects FOR UPDATE TO authenticated
+    USING (bucket_id = 'buyer-documents');
+
+CREATE POLICY "Authenticated users can delete buyer documents"
+    ON storage.objects FOR DELETE TO authenticated
+    USING (bucket_id = 'buyer-documents');
+
+CREATE POLICY "Public read access to buyer documents"
+    ON storage.objects FOR SELECT TO public
+    USING (bucket_id = 'buyer-documents');
+
+-- Service role full access to buyer-documents bucket
+CREATE POLICY "Service role full access to buyer-documents"
+    ON storage.objects FOR ALL TO service_role
+    USING (bucket_id = 'buyer-documents') WITH CHECK (bucket_id = 'buyer-documents');
+
+-- ============================================
+-- 12. SEED: Pre-create the company
 -- Replace these values with the client's details
 -- Then set APP_COMPANY_ID in .env.local to the generated UUID
 -- ============================================

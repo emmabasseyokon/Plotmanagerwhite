@@ -38,6 +38,7 @@ export type Database = {
           next_payment_date: string | null
           notes: string | null
           number_of_plots: number | null
+          payment_proof_url: string | null
           payment_status: string
           phone: string | null
           referral_phone: string | null
@@ -75,6 +76,7 @@ export type Database = {
           next_payment_date?: string | null
           notes?: string | null
           number_of_plots?: number | null
+          payment_proof_url?: string | null
           payment_status?: string
           phone?: string | null
           referral_phone?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           next_payment_date?: string | null
           notes?: string | null
           number_of_plots?: number | null
+          payment_proof_url?: string | null
           payment_status?: string
           phone?: string | null
           referral_phone?: string | null

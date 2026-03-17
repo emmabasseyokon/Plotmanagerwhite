@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { generateInstallmentSchedule } from '@/lib/schedule'
 import { User, MapPin, CreditCard, Users, Share2, CheckCircle } from 'lucide-react'
+import { PaymentProofUpload } from '@/components/PaymentProofUpload'
 
 interface PlotSizeOption {
   size: string
@@ -79,6 +80,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [referralSource, setReferralSource] = useState('')
   const [referralPhone, setReferralPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [paymentProofUrl, setPaymentProofUrl] = useState('')
 
   const selectedEstate = estates.find((e) => e.id === estateId)
   const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
@@ -129,6 +131,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           referral_source: referralSource || undefined,
           referral_phone: referralPhone || undefined,
           notes: notes || undefined,
+          payment_proof_url: paymentProofUrl || undefined,
         }),
       })
 
@@ -473,6 +476,13 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                 )}
               </>
             )}
+
+            <PaymentProofUpload
+              value={paymentProofUrl}
+              onChange={setPaymentProofUrl}
+              uploadUrl="/api/public/upload"
+              slug={companySlug}
+            />
           </CardContent>
         </Card>
       )}

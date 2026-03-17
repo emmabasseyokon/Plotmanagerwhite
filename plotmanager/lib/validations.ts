@@ -59,6 +59,7 @@ export const buyerSchema = z.object({
   referral_phone: z.string().optional(),
   notes: z.string().optional(),
   estate_id: z.string().uuid().optional().or(z.literal('')),
+  payment_proof_url: z.string().url().optional().or(z.literal('')),
   installment_plan: installmentPlanSchema.optional(),
 })
 
@@ -159,6 +160,7 @@ export const publicBuyerFormSchema = z.object({
   referral_source: z.string().optional(),
   referral_phone: z.string().optional(),
   notes: z.string().max(1000).optional(),
+  payment_proof_url: z.string().url().optional().or(z.literal('')),
 })
 
 export type PublicBuyerFormData = z.infer<typeof publicBuyerFormSchema>

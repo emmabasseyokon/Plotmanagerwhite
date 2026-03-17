@@ -72,6 +72,7 @@ export default async function BuyerDetailPage({
     next_payment_date: string | null
     payment_status: string
     allocation_status: string
+    payment_proof_url: string | null
     documents: any
     notes: string | null
     created_at: string
@@ -369,6 +370,23 @@ export default async function BuyerDetailPage({
                 <div>
                   <p className="text-xs text-gray-500">Next Payment Date</p>
                   <p className="text-sm text-gray-900">{formatDate(buyer.next_payment_date)}</p>
+                </div>
+              </div>
+            )}
+            {buyer.payment_proof_url && (
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 bg-violet-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-4 h-4 text-violet-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Proof of Payment</p>
+                  <a href={buyer.payment_proof_url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={buyer.payment_proof_url}
+                      alt="Payment proof"
+                      className="h-24 w-auto rounded-lg border border-gray-200 object-cover hover:border-primary-500 transition-colors"
+                    />
+                  </a>
                 </div>
               </div>
             )}

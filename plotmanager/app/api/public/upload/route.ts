@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
-import { authenticateRequest, serverError } from '@/lib/api-helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -10,23 +9,18 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 }
 
-const ALLOWED_BUCKETS = ['estates', 'buyer-documents']
-
 export async function POST(request: NextRequest) {
   try {
-    const result = await authenticateRequest()
-    if (result.error) return result.error
-
     const formData = await request.formData()
     const file = formData.get('file') as File | null
-    const bucket = (formData.get('bucket') as string) || 'estates'
-
-    if (!ALLOWED_BUCKETS.includes(bucket)) {
-      return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
-    }
+    const slug = formData.get('slug') as string | null
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Company slug is required' }, { status: 400 })
     }
 
     const ext = ALLOWED_TYPES[file.type]
@@ -44,29 +38,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const fileName = `${randomUUID()}.${ext}`
-    const filePath = `${result.auth.companyId}/${fileName}`
-
     const adminClient = createAdminClient()
+
+    // Verify company exists
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('id')
+      .eq('slug', slug)
+      .single()
+
+    if (!company) {
+      return NextResponse.json({ error: 'Invalid company' }, { status: 404 })
+    }
+
+    const fileName = `${randomUUID()}.${ext}`
+    const filePath = `${company.id}/${fileName}`
+
     const buffer = Buffer.from(await file.arrayBuffer())
 
     const { error: uploadError } = await adminClient.storage
-      .from(bucket)
+      .from('buyer-documents')
       .upload(filePath, buffer, {
         contentType: file.type,
         upsert: false,
       })
 
     if (uploadError) {
-      return serverError(uploadError, 'POST /api/upload')
+      return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
     }
 
     const { data: { publicUrl } } = adminClient.storage
-      .from(bucket)
+      .from('buyer-documents')
       .getPublicUrl(filePath)
 
     return NextResponse.json({ url: publicUrl })
-  } catch (err) {
-    return serverError(err, 'POST /api/upload')
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
