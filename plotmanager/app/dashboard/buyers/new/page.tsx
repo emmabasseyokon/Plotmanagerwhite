@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { buyerSchema, type BuyerFormData } from '@/lib/validations'
@@ -32,6 +32,9 @@ interface Estate {
 
 export default function NewBuyerPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromBuyerId = searchParams.get('from')
+  const prefillEstateId = searchParams.get('estate_id')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [estates, setEstates] = useState<Estate[]>([])
@@ -40,6 +43,7 @@ export default function NewBuyerPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [initialDeposit, setInitialDeposit] = useState(0)
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
+  const [selectedPlotSizes, setSelectedPlotSizes] = useState<string[]>([])
 
   const {
     register,
@@ -90,11 +94,45 @@ export default function NewBuyerPage() {
     : []
 
   useEffect(() => {
-    fetch('/api/estates')
-      .then((res) => res.json())
-      .then((data) => setEstates(data.estates || []))
-      .catch(() => {})
-  }, [])
+    const loadData = async () => {
+      try {
+        const estatesRes = await fetch('/api/estates').then((r) => r.json())
+        const loadedEstates: Estate[] = estatesRes.estates || []
+        setEstates(loadedEstates)
+
+        // Pre-fill from existing buyer when coming from "Add Another Plot"
+        if (fromBuyerId) {
+          const buyerRes = await fetch(`/api/buyers/${fromBuyerId}`).then((r) => r.json())
+          if (buyerRes.buyer) {
+            const b = buyerRes.buyer
+            setValue('first_name', b.first_name || '')
+            setValue('last_name', b.last_name || '')
+            setValue('email', b.email || '')
+            setValue('phone', b.phone || '')
+            setValue('gender', b.gender || '')
+            setValue('home_address', b.home_address || '')
+            setValue('city', b.city || '')
+            setValue('state', b.state || '')
+            setValue('next_of_kin_name', b.next_of_kin_name || '')
+            setValue('next_of_kin_phone', b.next_of_kin_phone || '')
+            setValue('next_of_kin_address', b.next_of_kin_address || '')
+            setValue('next_of_kin_relationship', b.next_of_kin_relationship || '')
+          }
+          if (prefillEstateId) {
+            const estate = loadedEstates.find((e) => e.id === prefillEstateId)
+            if (estate) {
+              setValue('estate_id', prefillEstateId)
+              setValue('plot_location', estate.location || estate.name)
+              if (!estate.plot_sizes || estate.plot_sizes.length === 0) {
+                setValue('total_amount', estate.price_per_plot || 0)
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+    loadData()
+  }, [fromBuyerId, prefillEstateId, setValue])
 
   const selectedEstate = estates.find((e) => e.id === watch('estate_id'))
   const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
@@ -102,6 +140,7 @@ export default function NewBuyerPage() {
   const handleEstateChange = (estateId: string) => {
     setValue('estate_id', estateId)
     setValue('plot_size', '')
+    setSelectedPlotSizes([])
     if (estateId) {
       const estate = estates.find((e) => e.id === estateId)
       if (estate) {
@@ -116,14 +155,19 @@ export default function NewBuyerPage() {
     }
   }
 
-  const handlePlotSizeChange = (size: string) => {
-    setValue('plot_size', size)
-    if (selectedEstate && size) {
-      const match = selectedEstate.plot_sizes.find((ps) => ps.size === size)
-      if (match) {
-        const numPlots = watch('number_of_plots') || 1
-        setValue('total_amount', match.price * numPlots)
-      }
+  const handlePlotSizeToggle = (size: string) => {
+    const updated = selectedPlotSizes.includes(size)
+      ? selectedPlotSizes.filter((s) => s !== size)
+      : [...selectedPlotSizes, size]
+    setSelectedPlotSizes(updated)
+    setValue('plot_size', updated.join(', '))
+    setValue('number_of_plots', Math.max(1, updated.length))
+    if (selectedEstate) {
+      const total = updated.reduce((sum, s) => {
+        const match = selectedEstate.plot_sizes.find((ps) => ps.size === s)
+        return sum + (match ? match.price : 0)
+      }, 0)
+      setValue('total_amount', total)
     }
   }
 
@@ -185,10 +229,20 @@ export default function NewBuyerPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="font-display text-3xl font-bold text-gray-900">Add New Buyer</h1>
-          <p className="text-gray-500 mt-1">Enter the buyer&apos;s information below</p>
+          <h1 className="font-display text-3xl font-bold text-gray-900">
+            {fromBuyerId ? 'Add Another Plot' : 'Add New Buyer'}
+          </h1>
+          <p className="text-gray-500 mt-1">
+            {fromBuyerId ? 'Purchase an additional plot for this buyer' : 'Enter the buyer\u2019s information below'}
+          </p>
         </div>
       </div>
+
+      {fromBuyerId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
+          Personal details have been pre-filled from the existing buyer. Select the plot details and payment option for the new purchase.
+        </div>
+      )}
 
       {serverError && (
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-sm text-red-700">
@@ -286,7 +340,7 @@ export default function NewBuyerPage() {
                 </label>
                 <select
                   className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  defaultValue=""
+                  value={watch('estate_id') || ''}
                   onChange={(e) => handleEstateChange(e.target.value)}
                 >
                   <option value="">-- No estate (manual entry) --</option>
@@ -315,38 +369,59 @@ export default function NewBuyerPage() {
                 {...register('plot_number')}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {estateHasPlotSizes ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Plot Size *</label>
-                  <select
-                    className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                    value={watch('plot_size') || ''}
-                    onChange={(e) => handlePlotSizeChange(e.target.value)}
-                  >
-                    <option value="">Select plot size</option>
-                    {selectedEstate!.plot_sizes.map((ps) => (
-                      <option key={ps.size} value={ps.size}>
-                        {ps.size} — {formatCurrency(ps.price)}
-                      </option>
-                    ))}
-                  </select>
+            {estateHasPlotSizes ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Sizes</label>
+                <div className="space-y-2">
+                  {selectedEstate!.plot_sizes.map((ps) => {
+                    const isChecked = selectedPlotSizes.includes(ps.size)
+                    return (
+                      <label
+                        key={ps.size}
+                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          isChecked
+                            ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handlePlotSizeToggle(ps.size)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="font-medium text-gray-900">{ps.size}</span>
+                        </div>
+                        <span className="font-semibold text-gray-900">{formatCurrency(ps.price)}</span>
+                      </label>
+                    )
+                  })}
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Plot Size"
                   placeholder="500sqm"
                   error={errors.plot_size?.message}
                   {...register('plot_size')}
                 />
-              )}
-              <Input
-                label="Purchase Date"
-                type="date"
-                error={errors.purchase_date?.message}
-                {...register('purchase_date')}
-              />
-            </div>
+                <Input
+                  label="Number of Plots"
+                  type="number"
+                  min={1}
+                  error={errors.number_of_plots?.message}
+                  {...register('number_of_plots', { valueAsNumber: true })}
+                />
+              </div>
+            )}
+            <Input
+              label="Purchase Date"
+              type="date"
+              error={errors.purchase_date?.message}
+              {...register('purchase_date')}
+            />
           </CardContent>
         </Card>
 

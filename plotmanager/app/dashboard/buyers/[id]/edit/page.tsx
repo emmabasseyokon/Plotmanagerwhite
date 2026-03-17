@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { NIGERIAN_STATES, REFERRAL_OPTIONS } from '@/lib/constants'
 import Link from 'next/link'
 import { generateInstallmentSchedule } from '@/lib/schedule'
@@ -46,6 +46,7 @@ export default function EditBuyerPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [initialDeposit, setInitialDeposit] = useState(0)
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
+  const [selectedPlotSizes, setSelectedPlotSizes] = useState<string[]>([])
 
   const {
     register,
@@ -89,6 +90,11 @@ export default function EditBuyerPage() {
             setPaymentType('outright')
           }
           setPaymentProofUrl(b.payment_proof_url || '')
+          // Restore selected plot sizes from comma-separated string
+          if (b.plot_size) {
+            const sizes = b.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+            setSelectedPlotSizes(sizes)
+          }
           reset({
             first_name: b.first_name || '',
             last_name: b.last_name || '',
@@ -129,6 +135,7 @@ export default function EditBuyerPage() {
     setCurrentEstateId(estateId)
     setValue('estate_id', estateId)
     setValue('plot_size', '')
+    setSelectedPlotSizes([])
     if (estateId) {
       const estate = estates.find((e) => e.id === estateId)
       if (estate) {
@@ -142,14 +149,19 @@ export default function EditBuyerPage() {
     }
   }
 
-  const handlePlotSizeChange = (size: string) => {
-    setValue('plot_size', size)
-    if (selectedEstate && size) {
-      const match = selectedEstate.plot_sizes.find((ps) => ps.size === size)
-      if (match) {
-        const numPlots = watch('number_of_plots') || 1
-        setValue('total_amount', match.price * numPlots)
-      }
+  const handlePlotSizeToggle = (size: string) => {
+    const updated = selectedPlotSizes.includes(size)
+      ? selectedPlotSizes.filter((s) => s !== size)
+      : [...selectedPlotSizes, size]
+    setSelectedPlotSizes(updated)
+    setValue('plot_size', updated.join(', '))
+    setValue('number_of_plots', Math.max(1, updated.length))
+    if (selectedEstate) {
+      const total = updated.reduce((sum, s) => {
+        const match = selectedEstate.plot_sizes.find((ps) => ps.size === s)
+        return sum + (match ? match.price : 0)
+      }, 0)
+      setValue('total_amount', total)
     }
   }
 
@@ -347,37 +359,73 @@ export default function EditBuyerPage() {
                 {...register('plot_number')}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {estateHasPlotSizes ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Plot Size *</label>
-                  <select
-                    className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                    value={watch('plot_size') || ''}
-                    onChange={(e) => handlePlotSizeChange(e.target.value)}
-                  >
-                    <option value="">Select plot size</option>
-                    {selectedEstate!.plot_sizes.map((ps) => (
-                      <option key={ps.size} value={ps.size}>
-                        {ps.size} — {formatCurrency(ps.price)}
-                      </option>
-                    ))}
-                  </select>
+            {estateHasPlotSizes ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plot Sizes</label>
+                <div className="space-y-2">
+                  {selectedEstate!.plot_sizes.map((ps) => {
+                    const isChecked = selectedPlotSizes.includes(ps.size)
+                    return (
+                      <label
+                        key={ps.size}
+                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          isChecked
+                            ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handlePlotSizeToggle(ps.size)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="font-medium text-gray-900">{ps.size}</span>
+                        </div>
+                        <span className="font-semibold text-gray-900">{formatCurrency(ps.price)}</span>
+                      </label>
+                    )
+                  })}
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Plot Size"
                   placeholder="500sqm"
                   error={errors.plot_size?.message}
                   {...register('plot_size')}
                 />
-              )}
-              <Input
-                label="Purchase Date"
-                type="date"
-                error={errors.purchase_date?.message}
-                {...register('purchase_date')}
-              />
+                <Input
+                  label="Number of Plots"
+                  type="number"
+                  min={1}
+                  error={errors.number_of_plots?.message}
+                  {...register('number_of_plots', { valueAsNumber: true })}
+                />
+              </div>
+            )}
+            <Input
+              label="Purchase Date"
+              type="date"
+              error={errors.purchase_date?.message}
+              {...register('purchase_date')}
+            />
+
+            {/* Add Another Plot */}
+            <div className="pt-4 border-t border-gray-100">
+              <Link
+                href={`/dashboard/buyers/new?from=${buyerId}&estate_id=${currentEstateId}`}
+              >
+                <Button type="button" variant="outline" className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another Plot
+                </Button>
+              </Link>
+              <p className="text-xs text-gray-500 mt-1.5 text-center">
+                Creates a new plot purchase linked to this buyer&apos;s email
+              </p>
             </div>
           </CardContent>
         </Card>

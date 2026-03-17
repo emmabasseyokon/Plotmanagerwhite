@@ -147,7 +147,7 @@ export const publicBuyerFormSchema = z.object({
   state: z.string().optional(),
   estate_id: z.string().uuid('Please select an estate'),
   number_of_plots: z.number().int().min(1).max(100).default(1),
-  plot_size: z.string().max(50).optional(),
+  plot_size: z.string().max(500).optional(),
   purchase_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date').optional(),
   payment_type: z.enum(['outright', 'installment']),
   installment_duration: z.number().int().min(1).max(60).optional(),
@@ -161,6 +161,7 @@ export const publicBuyerFormSchema = z.object({
   referral_phone: z.string().optional(),
   notes: z.string().max(1000).optional(),
   payment_proof_url: z.string().url().optional().or(z.literal('')),
+  add_another: z.boolean().optional(),
 })
 
 export type PublicBuyerFormData = z.infer<typeof publicBuyerFormSchema>

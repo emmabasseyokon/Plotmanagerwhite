@@ -103,35 +103,48 @@ export async function POST(
       return NextResponse.json({ error: 'Not enough available plots in this estate' }, { status: 400 })
     }
 
-    // Duplicate check: same email + estate in last 24 hours
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const { data: existing } = await adminClient
-      .from('buyers')
-      .select('id')
-      .eq('email', data.email)
-      .eq('estate_id', data.estate_id)
-      .eq('company_id', company.id)
-      .gte('created_at', oneDayAgo)
-      .limit(1)
+    // Duplicate check: same email + estate in last 24 hours (skip if adding another plot)
+    if (!data.add_another) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { data: existing } = await adminClient
+        .from('buyers')
+        .select('id, first_name, last_name, email, phone, plot_size, plot_number, number_of_plots, total_amount, amount_paid, payment_status, purchase_date, created_at')
+        .eq('email', data.email)
+        .eq('estate_id', data.estate_id)
+        .eq('company_id', company.id)
+        .gte('created_at', oneDayAgo)
+        .limit(1)
 
-    if (existing && existing.length > 0) {
-      return NextResponse.json(
-        { error: 'A registration with this email for this estate was already submitted recently. Please contact the company directly.' },
-        { status: 409 }
-      )
-    }
-
-    // Calculate total amount — use plot_sizes price if buyer selected a specific size
-    let pricePerPlot = estate.price_per_plot || 0
-    const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
-    if (data.plot_size && plotSizes.length > 0) {
-      const matchedSize = plotSizes.find((ps) => ps.size === data.plot_size)
-      if (matchedSize) {
-        pricePerPlot = matchedSize.price
+      if (existing && existing.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'duplicate_buyer',
+            message: 'You already have a plot in this estate.',
+            existingBuyer: existing[0],
+          },
+          { status: 409 }
+        )
       }
     }
+
+    // Calculate total amount — support multiple comma-separated plot sizes
+    const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
     const numberOfPlots = data.number_of_plots || 1
-    const totalAmount = pricePerPlot * numberOfPlots
+    let totalAmount: number
+
+    if (data.plot_size && plotSizes.length > 0) {
+      const selectedSizes = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+      totalAmount = selectedSizes.reduce((sum: number, size: string) => {
+        const matched = plotSizes.find((ps) => ps.size === size)
+        return sum + (matched ? matched.price : 0)
+      }, 0)
+      // Fallback if no sizes matched (shouldn't happen with valid input)
+      if (totalAmount === 0) {
+        totalAmount = (estate.price_per_plot || 0) * numberOfPlots
+      }
+    } else {
+      totalAmount = (estate.price_per_plot || 0) * numberOfPlots
+    }
 
     const today = new Date().toISOString().split('T')[0]
     const isOutright = data.payment_type === 'outright'

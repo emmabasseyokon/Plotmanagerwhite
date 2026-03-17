@@ -55,6 +55,12 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [addAnother, setAddAnother] = useState(false)
+  const [existingBuyer, setExistingBuyer] = useState<{
+    first_name: string; last_name: string; plot_size: string | null;
+    number_of_plots: number; total_amount: number; amount_paid: number;
+    payment_status: string; purchase_date: string | null;
+  } | null>(null)
 
   // Form state
   const [firstName, setFirstName] = useState('')
@@ -68,6 +74,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [estateId, setEstateId] = useState('')
   const [numberOfPlots, setNumberOfPlots] = useState(1)
   const [plotSize, setPlotSize] = useState('')
+  const [selectedPlotSizes, setSelectedPlotSizes] = useState<string[]>([])
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentType, setPaymentType] = useState<'outright' | 'installment'>('outright')
   const [installmentDuration, setInstallmentDuration] = useState(6)
@@ -84,9 +91,14 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
 
   const selectedEstate = estates.find((e) => e.id === estateId)
   const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
-  const selectedPlotSizeEntry = estateHasPlotSizes ? selectedEstate.plot_sizes.find((ps) => ps.size === plotSize) : null
-  const pricePerPlot = selectedPlotSizeEntry ? selectedPlotSizeEntry.price : (selectedEstate?.price_per_plot || 0)
-  const totalAmount = pricePerPlot * numberOfPlots
+
+  // Calculate total: sum of selected plot size prices, or pricePerPlot × numberOfPlots for freeform
+  const totalAmount = estateHasPlotSizes
+    ? selectedPlotSizes.reduce((sum, size) => {
+        const match = selectedEstate.plot_sizes.find((ps) => ps.size === size)
+        return sum + (match ? match.price : 0)
+      }, 0)
+    : (selectedEstate?.price_per_plot || 0) * numberOfPlots
 
   const schedule = paymentType === 'installment' && installmentDuration > 0 && totalAmount > 0
     ? generateInstallmentSchedule({
@@ -117,8 +129,8 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           city: city || undefined,
           state: state || undefined,
           estate_id: estateId,
-          number_of_plots: numberOfPlots,
-          plot_size: plotSize || undefined,
+          number_of_plots: estateHasPlotSizes ? Math.max(1, selectedPlotSizes.length) : numberOfPlots,
+          plot_size: estateHasPlotSizes ? selectedPlotSizes.join(', ') || undefined : plotSize || undefined,
           purchase_date: purchaseDate || undefined,
           payment_type: paymentType,
           installment_duration: paymentType === 'installment' ? installmentDuration : undefined,
@@ -132,12 +144,19 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           referral_phone: referralPhone || undefined,
           notes: notes || undefined,
           payment_proof_url: paymentProofUrl || undefined,
+          add_another: addAnother || undefined,
         }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
+        if (data.error === 'duplicate_buyer' && data.existingBuyer) {
+          setExistingBuyer(data.existingBuyer)
+          setError(null)
+          setIsSubmitting(false)
+          return
+        }
         if (data.details) setFieldErrors(data.details)
         throw new Error(data.error || 'Submission failed')
       }
@@ -172,6 +191,70 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {existingBuyer && !addAnother && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-900">Existing Plot Found</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              You already have a plot registered in this estate. Here are your details:
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Name</span>
+                <span className="font-medium text-gray-900">{existingBuyer.first_name} {existingBuyer.last_name}</span>
+              </div>
+              {existingBuyer.plot_size && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Plot Size</span>
+                  <span className="font-medium text-gray-900">{existingBuyer.plot_size}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Number of Plots</span>
+                <span className="font-medium text-gray-900">{existingBuyer.number_of_plots || 1}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total Amount</span>
+                <span className="font-medium text-gray-900">{formatCurrency(existingBuyer.total_amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Amount Paid</span>
+                <span className="font-medium text-gray-900">{formatCurrency(existingBuyer.amount_paid)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Payment Status</span>
+                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                  existingBuyer.payment_status === 'fully_paid' ? 'bg-green-100 text-green-700' :
+                  existingBuyer.payment_status === 'overdue' ? 'bg-red-100 text-red-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {existingBuyer.payment_status?.replace('_', ' ')}
+                </span>
+              </div>
+              {existingBuyer.purchase_date && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Purchase Date</span>
+                  <span className="font-medium text-gray-900">{formatDate(existingBuyer.purchase_date)}</span>
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              className="w-full mt-4"
+              onClick={() => {
+                setAddAnother(true)
+                setExistingBuyer(null)
+              }}
+            >
+              Add Another Plot
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}
@@ -273,7 +356,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
             <select
               className={selectClass}
               value={estateId}
-              onChange={(e) => setEstateId(e.target.value)}
+              onChange={(e) => { setEstateId(e.target.value); setSelectedPlotSizes([]); setPlotSize('') }}
               required
             >
               <option value="">Choose an estate</option>
@@ -298,47 +381,72 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                   </div>
                   <div>
                     <p className="text-primary-600 font-medium">
-                      {estateHasPlotSizes && plotSize ? 'Price per Plot' : 'Starting from'}
+                      {estateHasPlotSizes ? 'Select Plot Sizes' : 'Price per Plot'}
                     </p>
-                    <p className="text-gray-900 font-semibold">{formatCurrency(pricePerPlot)}</p>
+                    <p className="text-gray-900 font-semibold">
+                      {estateHasPlotSizes
+                        ? `${selectedPlotSizes.length} selected`
+                        : formatCurrency(selectedEstate.price_per_plot || 0)}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {estateHasPlotSizes ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Plot Size *</label>
-                    <select
-                      className={selectClass}
-                      value={plotSize}
-                      onChange={(e) => setPlotSize(e.target.value)}
-                      required
-                    >
-                      <option value="">Select plot size</option>
-                      {selectedEstate.plot_sizes.map((ps) => (
-                        <option key={ps.size} value={ps.size}>
-                          {ps.size} — {formatCurrency(ps.price)}
-                        </option>
-                      ))}
-                    </select>
+              {estateHasPlotSizes ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Plot Sizes *</label>
+                  <div className="space-y-2">
+                    {selectedEstate.plot_sizes.map((ps) => {
+                      const isChecked = selectedPlotSizes.includes(ps.size)
+                      return (
+                        <label
+                          key={ps.size}
+                          className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                            isChecked
+                              ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                setSelectedPlotSizes((prev) =>
+                                  isChecked ? prev.filter((s) => s !== ps.size) : [...prev, ps.size]
+                                )
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                            <span className="font-medium text-gray-900">{ps.size}</span>
+                          </div>
+                          <span className="font-semibold text-gray-900">{formatCurrency(ps.price)}</span>
+                        </label>
+                      )
+                    })}
                   </div>
-                ) : (
+                  {selectedPlotSizes.length === 0 && fieldErrors.plot_size && (
+                    <p className="text-sm text-red-600 mt-1">{fieldErrors.plot_size[0]}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Plot Size"
                     placeholder="e.g. 600sqm"
                     value={plotSize}
                     onChange={(e) => setPlotSize(e.target.value)}
                   />
-                )}
-                <Input
-                  label="Number of Plots"
-                  type="number"
-                  min={1}
-                  value={String(numberOfPlots)}
-                  onChange={(e) => setNumberOfPlots(Math.max(1, parseInt(e.target.value) || 1))}
-                />
-              </div>
+                  <Input
+                    label="Number of Plots"
+                    type="number"
+                    min={1}
+                    value={String(numberOfPlots)}
+                    onChange={(e) => setNumberOfPlots(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Amount</label>
