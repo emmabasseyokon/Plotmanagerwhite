@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent } from '@/components/ui/Card'
-import { Users, Wallet, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Users, Wallet, AlertTriangle, CheckCircle, CalendarClock } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -62,6 +63,31 @@ export default async function DashboardPage() {
     plot_location: string | null; payment_status: string; created_at: string
   }>
 
+  // Fetch upcoming installment payments (next 30 days)
+  const adminClient = createAdminClient()
+  const today = new Date().toISOString().split('T')[0]
+  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+  const { data: upcomingRaw } = await adminClient
+    .from('payment_schedules')
+    .select('id, due_date, expected_amount, paid_amount, status, installment_number, buyer_id, buyers(id, first_name, last_name, estates(name))')
+    .eq('company_id', companyId)
+    .in('status', ['unpaid', 'partial', 'overdue'])
+    .lte('due_date', thirtyDaysFromNow)
+    .order('due_date', { ascending: true })
+    .limit(10)
+
+  const upcomingPayments = (upcomingRaw || []) as Array<{
+    id: string
+    due_date: string
+    expected_amount: number
+    paid_amount: number
+    status: string
+    installment_number: number
+    buyer_id: string
+    buyers: { id: string; first_name: string; last_name: string; estates: { name: string } | null } | null
+  }>
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -110,6 +136,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardContent className="p-6">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-4">Recent Buyers</h2>
@@ -146,6 +173,50 @@ export default async function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarClock className="w-5 h-5 text-blue-600" />
+            <h2 className="font-display text-xl font-bold text-gray-900">Upcoming Payments</h2>
+          </div>
+          {upcomingPayments.length > 0 ? (
+            <div className="space-y-3">
+              {upcomingPayments.map((entry) => {
+                const remaining = entry.expected_amount - entry.paid_amount
+                const isOverdue = entry.due_date < today
+                return (
+                  <Link
+                    key={entry.id}
+                    href={`/dashboard/buyers/${entry.buyer_id}`}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">
+                        {entry.buyers?.first_name} {entry.buyers?.last_name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {entry.buyers?.estates?.name || 'No estate'} — Installment #{entry.installment_number}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className={`text-sm font-semibold ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                        {formatCurrency(remaining)}
+                      </p>
+                      <p className={`text-xs ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
+                        {isOverdue ? 'Overdue' : `Due ${formatDate(entry.due_date)}`}
+                      </p>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No upcoming installment payments.</p>
+          )}
+        </CardContent>
+      </Card>
+      </div>
     </div>
   )
 }
