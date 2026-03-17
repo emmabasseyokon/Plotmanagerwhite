@@ -127,18 +127,21 @@ export async function POST(
       }
     }
 
-    // Calculate total amount — support multiple comma-separated plot sizes
+    // Calculate total amount — support "2x 250sqm, 3x 600sqm" format or plain sizes
     const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
     const numberOfPlots = data.number_of_plots || 1
     let totalAmount: number
 
     if (data.plot_size && plotSizes.length > 0) {
-      const selectedSizes = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
-      totalAmount = selectedSizes.reduce((sum: number, size: string) => {
-        const matched = plotSizes.find((ps) => ps.size === size)
-        return sum + (matched ? matched.price : 0)
+      const entries = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+      totalAmount = entries.reduce((sum: number, entry: string) => {
+        const qtyMatch = entry.match(/^(\d+)x\s+(.+)$/)
+        const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1
+        const sizeName = qtyMatch ? qtyMatch[2] : entry
+        const matched = plotSizes.find((ps) => ps.size === sizeName)
+        return sum + (matched ? matched.price * qty : 0)
       }, 0)
-      // Fallback if no sizes matched (shouldn't happen with valid input)
+      // Fallback if no sizes matched
       if (totalAmount === 0) {
         totalAmount = (estate.price_per_plot || 0) * numberOfPlots
       }

@@ -74,7 +74,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [estateId, setEstateId] = useState('')
   const [numberOfPlots, setNumberOfPlots] = useState(1)
   const [plotSize, setPlotSize] = useState('')
-  const [selectedPlotSizes, setSelectedPlotSizes] = useState<string[]>([])
+  const [plotSizeQuantities, setPlotSizeQuantities] = useState<Record<string, number>>({})
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentType, setPaymentType] = useState<'outright' | 'installment'>('outright')
   const [installmentDuration, setInstallmentDuration] = useState(6)
@@ -92,13 +92,17 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const selectedEstate = estates.find((e) => e.id === estateId)
   const estateHasPlotSizes = selectedEstate && selectedEstate.plot_sizes && selectedEstate.plot_sizes.length > 0
 
-  // Calculate total: sum of selected plot size prices, or pricePerPlot × numberOfPlots for freeform
+  // Calculate total: sum of (quantity × price) for each selected plot size, or pricePerPlot × numberOfPlots for freeform
   const totalAmount = estateHasPlotSizes
-    ? selectedPlotSizes.reduce((sum, size) => {
+    ? Object.entries(plotSizeQuantities).reduce((sum, [size, qty]) => {
+        if (qty <= 0) return sum
         const match = selectedEstate.plot_sizes.find((ps) => ps.size === size)
-        return sum + (match ? match.price : 0)
+        return sum + (match ? match.price * qty : 0)
       }, 0)
     : (selectedEstate?.price_per_plot || 0) * numberOfPlots
+  const totalPlotCount = estateHasPlotSizes
+    ? Object.values(plotSizeQuantities).reduce((sum, qty) => sum + (qty > 0 ? qty : 0), 0)
+    : numberOfPlots
 
   const schedule = paymentType === 'installment' && installmentDuration > 0 && totalAmount > 0
     ? generateInstallmentSchedule({
@@ -129,8 +133,10 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           city: city || undefined,
           state: state || undefined,
           estate_id: estateId,
-          number_of_plots: estateHasPlotSizes ? Math.max(1, selectedPlotSizes.length) : numberOfPlots,
-          plot_size: estateHasPlotSizes ? selectedPlotSizes.join(', ') || undefined : plotSize || undefined,
+          number_of_plots: estateHasPlotSizes ? Math.max(1, totalPlotCount) : numberOfPlots,
+          plot_size: estateHasPlotSizes
+            ? Object.entries(plotSizeQuantities).filter(([, qty]) => qty > 0).map(([size, qty]) => `${qty}x ${size}`).join(', ') || undefined
+            : plotSize || undefined,
           purchase_date: purchaseDate || undefined,
           payment_type: paymentType,
           installment_duration: paymentType === 'installment' ? installmentDuration : undefined,
@@ -356,7 +362,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
             <select
               className={selectClass}
               value={estateId}
-              onChange={(e) => { setEstateId(e.target.value); setSelectedPlotSizes([]); setPlotSize('') }}
+              onChange={(e) => { setEstateId(e.target.value); setPlotSizeQuantities({}); setPlotSize('') }}
               required
             >
               <option value="">Choose an estate</option>
@@ -385,7 +391,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                     </p>
                     <p className="text-gray-900 font-semibold">
                       {estateHasPlotSizes
-                        ? `${selectedPlotSizes.length} selected`
+                        ? `${totalPlotCount} plot${totalPlotCount !== 1 ? 's' : ''} selected`
                         : formatCurrency(selectedEstate.price_per_plot || 0)}
                     </p>
                   </div>
@@ -397,35 +403,52 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
                   <label className="block text-sm font-medium text-gray-700 mb-2">Plot Sizes *</label>
                   <div className="space-y-2">
                     {selectedEstate.plot_sizes.map((ps) => {
-                      const isChecked = selectedPlotSizes.includes(ps.size)
+                      const qty = plotSizeQuantities[ps.size] || 0
+                      const isChecked = qty > 0
                       return (
-                        <label
+                        <div
                           key={ps.size}
-                          className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
                             isChecked
                               ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => {
-                                setSelectedPlotSizes((prev) =>
-                                  isChecked ? prev.filter((s) => s !== ps.size) : [...prev, ps.size]
-                                )
+                                setPlotSizeQuantities((prev) => ({
+                                  ...prev,
+                                  [ps.size]: isChecked ? 0 : 1,
+                                }))
                               }}
-                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                             />
                             <span className="font-medium text-gray-900">{ps.size}</span>
-                          </div>
-                          <span className="font-semibold text-gray-900">{formatCurrency(ps.price)}</span>
-                        </label>
+                            <span className="text-sm text-gray-500">({formatCurrency(ps.price)} each)</span>
+                          </label>
+                          {isChecked && (
+                            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                              <input
+                                type="number"
+                                min={1}
+                                value={qty}
+                                onChange={(e) => {
+                                  const val = Math.max(1, parseInt(e.target.value) || 1)
+                                  setPlotSizeQuantities((prev) => ({ ...prev, [ps.size]: val }))
+                                }}
+                                className="w-16 h-9 rounded-lg border-2 border-gray-200 bg-white px-2 text-center text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                              />
+                              <span className="text-xs text-gray-500 whitespace-nowrap">plot{qty !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                        </div>
                       )
                     })}
                   </div>
-                  {selectedPlotSizes.length === 0 && fieldErrors.plot_size && (
+                  {totalPlotCount === 0 && fieldErrors.plot_size && (
                     <p className="text-sm text-red-600 mt-1">{fieldErrors.plot_size[0]}</p>
                   )}
                 </div>

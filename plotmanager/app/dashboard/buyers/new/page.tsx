@@ -43,7 +43,7 @@ export default function NewBuyerPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [initialDeposit, setInitialDeposit] = useState(0)
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
-  const [selectedPlotSizes, setSelectedPlotSizes] = useState<string[]>([])
+  const [plotSizeQuantities, setPlotSizeQuantities] = useState<Record<string, number>>({})
 
   const {
     register,
@@ -140,7 +140,7 @@ export default function NewBuyerPage() {
   const handleEstateChange = (estateId: string) => {
     setValue('estate_id', estateId)
     setValue('plot_size', '')
-    setSelectedPlotSizes([])
+    setPlotSizeQuantities({})
     if (estateId) {
       const estate = estates.find((e) => e.id === estateId)
       if (estate) {
@@ -155,17 +155,23 @@ export default function NewBuyerPage() {
     }
   }
 
-  const handlePlotSizeToggle = (size: string) => {
-    const updated = selectedPlotSizes.includes(size)
-      ? selectedPlotSizes.filter((s) => s !== size)
-      : [...selectedPlotSizes, size]
-    setSelectedPlotSizes(updated)
-    setValue('plot_size', updated.join(', '))
-    setValue('number_of_plots', Math.max(1, updated.length))
+  const handlePlotSizeToggle = (size: string, quantity?: number) => {
+    const updated = { ...plotSizeQuantities }
+    if (quantity !== undefined) {
+      updated[size] = quantity
+    } else {
+      updated[size] = updated[size] > 0 ? 0 : 1
+    }
+    setPlotSizeQuantities(updated)
+    const plotSizeStr = Object.entries(updated).filter(([, qty]) => qty > 0).map(([s, qty]) => `${qty}x ${s}`).join(', ')
+    const totalCount = Object.values(updated).reduce((sum, qty) => sum + (qty > 0 ? qty : 0), 0)
+    setValue('plot_size', plotSizeStr)
+    setValue('number_of_plots', Math.max(1, totalCount))
     if (selectedEstate) {
-      const total = updated.reduce((sum, s) => {
+      const total = Object.entries(updated).reduce((sum, [s, qty]) => {
+        if (qty <= 0) return sum
         const match = selectedEstate.plot_sizes.find((ps) => ps.size === s)
-        return sum + (match ? match.price : 0)
+        return sum + (match ? match.price * qty : 0)
       }, 0)
       setValue('total_amount', total)
     }
@@ -374,27 +380,40 @@ export default function NewBuyerPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Plot Sizes</label>
                 <div className="space-y-2">
                   {selectedEstate!.plot_sizes.map((ps) => {
-                    const isChecked = selectedPlotSizes.includes(ps.size)
+                    const qty = plotSizeQuantities[ps.size] || 0
+                    const isChecked = qty > 0
                     return (
-                      <label
+                      <div
                         key={ps.size}
-                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
                           isChecked
                             ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => handlePlotSizeToggle(ps.size)}
-                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                           />
                           <span className="font-medium text-gray-900">{ps.size}</span>
-                        </div>
-                        <span className="font-semibold text-gray-900">{formatCurrency(ps.price)}</span>
-                      </label>
+                          <span className="text-sm text-gray-500">({formatCurrency(ps.price)} each)</span>
+                        </label>
+                        {isChecked && (
+                          <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                            <input
+                              type="number"
+                              min={1}
+                              value={qty}
+                              onChange={(e) => handlePlotSizeToggle(ps.size, Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-16 h-9 rounded-lg border-2 border-gray-200 bg-white px-2 text-center text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                            />
+                            <span className="text-xs text-gray-500 whitespace-nowrap">plot{qty !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
