@@ -160,10 +160,6 @@ export default async function BuyerDetailPage({
             <h1 className="font-display text-3xl font-bold text-gray-900">
               {buyer.first_name} {buyer.last_name}
             </h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
-              {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
-            </span>
-            <AllocationToggle buyerId={buyer.id} currentStatus={buyer.allocation_status || 'not_allocated'} />
           </div>
           <p className="text-gray-500 mt-1">
             Added {formatDate(buyer.created_at)}
@@ -376,6 +372,18 @@ export default async function BuyerDetailPage({
                 </div>
               </div>
             )}
+            <div className="border-t border-gray-100 pt-4 mt-2 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Payment Status</p>
+                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                  {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Allocation Status</p>
+                <AllocationToggle buyerId={buyer.id} currentStatus={buyer.allocation_status || 'not_allocated'} />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
