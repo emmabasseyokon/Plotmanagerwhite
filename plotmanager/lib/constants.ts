@@ -11,6 +11,17 @@ export const BUYER_STATUS_LABELS: Record<string, string> = {
   overdue: 'Overdue',
 }
 
+// Allocation status
+export const ALLOCATION_STATUS_COLORS: Record<string, string> = {
+  allocated: 'bg-green-100 text-green-700',
+  not_allocated: 'bg-gray-100 text-gray-600',
+}
+
+export const ALLOCATION_STATUS_LABELS: Record<string, string> = {
+  allocated: 'Allocated',
+  not_allocated: 'Not Allocated',
+}
+
 // Estate status
 export const ESTATE_STATUS_COLORS: Record<string, string> = {
   active: 'bg-green-100 text-green-700',

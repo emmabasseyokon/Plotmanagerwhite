@@ -123,6 +123,8 @@ CREATE TABLE IF NOT EXISTS buyers (
     next_of_kin_relationship TEXT,
     referral_source TEXT,
     referral_phone TEXT,
+    allocation_status TEXT NOT NULL DEFAULT 'not_allocated'
+        CHECK (allocation_status IN ('allocated', 'not_allocated')),
     documents JSONB DEFAULT '[]'::jsonb,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),

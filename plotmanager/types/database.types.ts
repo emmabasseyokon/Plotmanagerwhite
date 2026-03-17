@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       buyers: {
         Row: {
+          allocation_status: string
           amount_paid: number
           company_id: string
           created_at: string | null
@@ -52,6 +53,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allocation_status?: string
           amount_paid?: number
           company_id: string
           created_at?: string | null
@@ -88,6 +90,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allocation_status?: string
           amount_paid?: number
           company_id?: string
           created_at?: string | null

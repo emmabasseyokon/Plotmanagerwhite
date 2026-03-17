@@ -50,6 +50,7 @@ export const buyerSchema = z.object({
   amount_paid: z.number().min(0, 'Amount must be 0 or greater'),
   next_payment_date: z.string().optional(),
   payment_status: z.enum(['fully_paid', 'installment', 'overdue']).default('installment'),
+  allocation_status: z.enum(['allocated', 'not_allocated']).default('not_allocated').optional(),
   next_of_kin_name: z.string().optional(),
   next_of_kin_phone: z.string().optional(),
   next_of_kin_address: z.string().optional(),

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Plus, Search, Users } from 'lucide-react'
-import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS } from '@/lib/constants'
+import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS, ALLOCATION_STATUS_COLORS, ALLOCATION_STATUS_LABELS } from '@/lib/constants'
 
 export default async function BuyersPage({
   searchParams,
@@ -29,7 +29,7 @@ export default async function BuyersPage({
 
   let query = supabase
     .from('buyers')
-    .select('id, first_name, last_name, email, phone, plot_location, plot_number, payment_status, total_amount, amount_paid, estates(name)')
+    .select('id, first_name, last_name, email, phone, plot_location, plot_number, payment_status, allocation_status, total_amount, amount_paid, estates(name)')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
 
@@ -54,6 +54,7 @@ export default async function BuyersPage({
     plot_location: string | null
     plot_number: string | null
     payment_status: string
+    allocation_status: string
     total_amount: number
     amount_paid: number
     estates: { name: string } | null
@@ -129,6 +130,7 @@ export default async function BuyersPage({
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Name</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Estate</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Status</th>
+                    <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Allocation</th>
                     <th className="text-right text-sm font-medium text-gray-500 px-6 py-4">Total Amount</th>
                     <th className="text-right text-sm font-medium text-gray-500 px-6 py-4">Amount Paid</th>
                   </tr>
@@ -149,6 +151,11 @@ export default async function BuyersPage({
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
                           {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
+                          {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-gray-900">
@@ -175,9 +182,14 @@ export default async function BuyersPage({
                     <p className="font-medium text-gray-900">
                       {buyer.first_name} {buyer.last_name}
                     </p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.pending}`}>
-                      {BUYER_STATUS_LABELS[buyer.payment_status] || 'Pending'}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
+                        {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                        {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-sm text-gray-500 mb-2">
                     {buyer.estates?.name || 'No estate'}

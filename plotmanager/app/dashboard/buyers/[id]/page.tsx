@@ -20,6 +20,7 @@ import { BuyerActions } from '@/components/BuyerActions'
 import { RecordPayment } from '@/components/RecordPayment'
 import { ScheduleReminder } from '@/components/ScheduleReminder'
 import { SendReminder } from '@/components/SendReminder'
+import { AllocationToggle } from '@/components/AllocationToggle'
 import { BUYER_STATUS_COLORS, BUYER_STATUS_LABELS, SCHEDULE_STATUS_COLORS, SCHEDULE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/lib/constants'
 
 export default async function BuyerDetailPage({
@@ -70,6 +71,7 @@ export default async function BuyerDetailPage({
     amount_paid: number
     next_payment_date: string | null
     payment_status: string
+    allocation_status: string
     documents: any
     notes: string | null
     created_at: string
@@ -161,6 +163,7 @@ export default async function BuyerDetailPage({
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
               {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
             </span>
+            <AllocationToggle buyerId={buyer.id} currentStatus={buyer.allocation_status || 'not_allocated'} />
           </div>
           <p className="text-gray-500 mt-1">
             Added {formatDate(buyer.created_at)}
