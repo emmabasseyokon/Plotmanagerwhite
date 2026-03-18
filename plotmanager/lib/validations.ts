@@ -55,6 +55,7 @@ export const buyerSchema = z.object({
   next_of_kin_phone: z.string().optional(),
   next_of_kin_address: z.string().optional(),
   next_of_kin_relationship: z.string().optional(),
+  agent_id: z.string().uuid().optional().or(z.literal('')),
   referral_source: z.string().optional(),
   referral_phone: z.string().optional(),
   notes: z.string().optional(),
@@ -165,3 +166,30 @@ export const publicBuyerFormSchema = z.object({
 })
 
 export type PublicBuyerFormData = z.infer<typeof publicBuyerFormSchema>
+
+export const agentSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  phone: z.string().regex(/^(\+?[0-9]{7,15}|0[0-9]{10})$/, 'Please enter a valid phone number'),
+  bank_name: z.string().optional().or(z.literal('')),
+  bank_account_number: z.string().optional().or(z.literal('')),
+  bank_account_name: z.string().optional().or(z.literal('')),
+  commission_type: z.enum(['percentage', 'flat']).default('percentage'),
+  commission_rate: z.number().min(0, 'Must be 0 or greater'),
+  status: z.enum(['active', 'inactive']).default('active'),
+  notes: z.string().max(1000).optional().or(z.literal('')),
+})
+
+export type AgentFormData = z.infer<typeof agentSchema>
+
+export const commissionPaymentSchema = z.object({
+  commission_id: z.string().uuid('Invalid commission'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  payment_method: z.enum(['cash', 'bank_transfer', 'pos', 'online']),
+  reference: z.string().optional(),
+  notes: z.string().max(500).optional(),
+})
+
+export type CommissionPaymentFormData = z.infer<typeof commissionPaymentSchema>

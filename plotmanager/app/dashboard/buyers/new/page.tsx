@@ -44,6 +44,7 @@ export default function NewBuyerPage() {
   const [initialDeposit, setInitialDeposit] = useState(0)
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
   const [plotSizeQuantities, setPlotSizeQuantities] = useState<Record<string, number>>({})
+  const [agents, setAgents] = useState<Array<{ id: string; first_name: string; last_name: string }>>([])
 
   const {
     register,
@@ -75,6 +76,7 @@ export default function NewBuyerPage() {
       next_of_kin_phone: '',
       next_of_kin_address: '',
       next_of_kin_relationship: '',
+      agent_id: '',
       referral_source: '',
       referral_phone: '',
       notes: '',
@@ -96,9 +98,13 @@ export default function NewBuyerPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const estatesRes = await fetch('/api/estates').then((r) => r.json())
+        const [estatesRes, agentsRes] = await Promise.all([
+          fetch('/api/estates').then((r) => r.json()),
+          fetch('/api/agents?status=active').then((r) => r.json()),
+        ])
         const loadedEstates: Estate[] = estatesRes.estates || []
         setEstates(loadedEstates)
+        setAgents(agentsRes.agents || [])
 
         // Pre-fill from existing buyer when coming from "Add Another Plot"
         if (fromBuyerId) {
@@ -638,12 +644,27 @@ export default function NewBuyerPage() {
           </CardContent>
         </Card>
 
-        {/* Referral */}
+        {/* Agent / Referral */}
         <Card>
           <CardHeader>
-            <CardTitle>Referral Details</CardTitle>
+            <CardTitle>Agent &amp; Referral Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Referring Agent</label>
+              <select
+                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {...register('agent_id')}
+              >
+                <option value="">No agent</option>
+                {agents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.first_name} {agent.last_name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Commission will be auto-calculated based on agent settings</p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">How did they hear about us?</label>
               <select

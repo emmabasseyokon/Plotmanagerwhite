@@ -45,14 +45,14 @@ export default async function BuyerDetailPage({
 
   const { data: buyerRaw } = await supabase
     .from('buyers')
-    .select('*, estates(name)')
+    .select('*, estates(name), agents(first_name, last_name)')
     .eq('id', id)
     .eq('company_id', companyId)
     .single()
 
   if (!buyerRaw) redirect('/dashboard/buyers')
 
-  const buyer = buyerRaw as {
+  const buyer = buyerRaw as unknown as {
     id: string
     first_name: string
     last_name: string
@@ -84,9 +84,11 @@ export default async function BuyerDetailPage({
     next_of_kin_phone: string | null
     next_of_kin_address: string | null
     next_of_kin_relationship: string | null
+    agent_id: string | null
     referral_source: string | null
     referral_phone: string | null
     estates: { name: string } | null
+    agents: { first_name: string; last_name: string } | null
   }
 
   const { data: paymentsRaw } = await supabase
@@ -406,9 +408,25 @@ export default async function BuyerDetailPage({
         </Card>
       </div>
 
-      {/* Next of Kin & Referral */}
-      {(buyer.next_of_kin_name || buyer.referral_source) && (
+      {/* Agent & Referral & Next of Kin */}
+      {(buyer.agents || buyer.next_of_kin_name || buyer.referral_source) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {buyer.agents && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Referring Agent</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href={`/dashboard/agents/${buyer.agent_id}`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                >
+                  {buyer.agents.first_name} {buyer.agents.last_name}
+                  <span className="text-xs text-gray-400">View agent &rarr;</span>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
           {buyer.next_of_kin_name && (
             <Card>
               <CardHeader>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, UserCog, LogOut, Menu, X, MapPin, MessageCircle, Building, Bell, Settings } from 'lucide-react'
+import { Home, Users, UserCog, LogOut, Menu, X, MapPin, MessageCircle, Building, Bell, Settings, UserCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -29,6 +29,7 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Estates', href: '/dashboard/estates', icon: Building },
     { name: 'Buyers', href: '/dashboard/buyers', icon: Users },
+    { name: 'Agents', href: '/dashboard/agents', icon: UserCheck },
     { name: 'Reminders', href: '/dashboard/reminders', icon: Bell },
     ...(userRole === 'super_admin'
       ? [

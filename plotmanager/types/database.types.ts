@@ -14,8 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          id: string
+          company_id: string
+          first_name: string
+          last_name: string
+          email: string | null
+          phone: string
+          bank_name: string | null
+          bank_account_number: string | null
+          bank_account_name: string | null
+          commission_type: string
+          commission_rate: number
+          status: string
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          first_name: string
+          last_name: string
+          email?: string | null
+          phone: string
+          bank_name?: string | null
+          bank_account_number?: string | null
+          bank_account_name?: string | null
+          commission_type?: string
+          commission_rate?: number
+          status?: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          first_name?: string
+          last_name?: string
+          email?: string | null
+          phone?: string
+          bank_name?: string | null
+          bank_account_number?: string | null
+          bank_account_name?: string | null
+          commission_type?: string
+          commission_rate?: number
+          status?: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyers: {
         Row: {
+          agent_id: string | null
           allocation_status: string
           amount_paid: number
           company_id: string
@@ -54,6 +117,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          agent_id?: string | null
           allocation_status?: string
           amount_paid?: number
           company_id: string
@@ -92,6 +156,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          agent_id?: string | null
           allocation_status?: string
           amount_paid?: number
           company_id?: string
@@ -142,6 +207,135 @@ export type Database = {
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyers_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commissions: {
+        Row: {
+          id: string
+          company_id: string
+          agent_id: string
+          buyer_id: string
+          commission_amount: number
+          amount_paid: number
+          status: string
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          agent_id: string
+          buyer_id: string
+          commission_amount?: number
+          amount_paid?: number
+          status?: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agent_id?: string
+          buyer_id?: string
+          commission_amount?: number
+          amount_paid?: number
+          status?: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_payments: {
+        Row: {
+          id: string
+          company_id: string
+          commission_id: string
+          amount: number
+          payment_date: string
+          payment_method: string
+          reference: string | null
+          notes: string | null
+          recorded_by: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          commission_id: string
+          amount: number
+          payment_date: string
+          payment_method?: string
+          reference?: string | null
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          commission_id?: string
+          amount?: number
+          payment_date?: string
+          payment_method?: string
+          reference?: string | null
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payments_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

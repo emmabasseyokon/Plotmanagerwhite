@@ -47,6 +47,7 @@ export default function EditBuyerPage() {
   const [initialDeposit, setInitialDeposit] = useState(0)
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
   const [plotSizeQuantities, setPlotSizeQuantities] = useState<Record<string, number>>({})
+  const [agents, setAgents] = useState<Array<{ id: string; first_name: string; last_name: string }>>([])
 
   const {
     register,
@@ -74,9 +75,11 @@ export default function EditBuyerPage() {
     Promise.all([
       fetch(`/api/buyers/${buyerId}`).then((r) => r.json()),
       fetch('/api/estates').then((r) => r.json()),
+      fetch('/api/agents?status=active').then((r) => r.json()),
     ])
-      .then(([buyerData, estatesData]) => {
+      .then(([buyerData, estatesData, agentsData]) => {
         setEstates(estatesData.estates || [])
+        setAgents(agentsData.agents || [])
         if (buyerData.buyer) {
           const b = buyerData.buyer
           setCurrentEstateId(b.estate_id || '')
@@ -126,6 +129,7 @@ export default function EditBuyerPage() {
             next_of_kin_phone: b.next_of_kin_phone || '',
             next_of_kin_address: b.next_of_kin_address || '',
             next_of_kin_relationship: b.next_of_kin_relationship || '',
+            agent_id: b.agent_id || '',
             referral_source: b.referral_source || '',
             referral_phone: b.referral_phone || '',
             notes: b.notes || '',
@@ -655,12 +659,26 @@ export default function EditBuyerPage() {
           </CardContent>
         </Card>
 
-        {/* Referral */}
+        {/* Agent / Referral */}
         <Card>
           <CardHeader>
-            <CardTitle>Referral Details</CardTitle>
+            <CardTitle>Agent &amp; Referral Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Referring Agent</label>
+              <select
+                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {...register('agent_id')}
+              >
+                <option value="">No agent</option>
+                {agents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.first_name} {agent.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">How did they hear about us?</label>
               <select

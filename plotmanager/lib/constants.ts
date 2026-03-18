@@ -70,6 +70,36 @@ export const NIGERIAN_STATES = [
   'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
 ]
 
+// Agent status
+export const AGENT_STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  inactive: 'bg-gray-100 text-gray-600',
+}
+
+export const AGENT_STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+}
+
+// Commission status
+export const COMMISSION_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  partially_paid: 'bg-blue-100 text-blue-700',
+  paid: 'bg-green-100 text-green-700',
+}
+
+export const COMMISSION_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  partially_paid: 'Partially Paid',
+  paid: 'Paid',
+}
+
+// Commission type labels
+export const COMMISSION_TYPE_LABELS: Record<string, string> = {
+  percentage: 'Percentage',
+  flat: 'Flat Rate',
+}
+
 // Referral source options
 export const REFERRAL_OPTIONS = [
   'Instagram', 'Facebook', 'Twitter/X', 'TikTok', 'YouTube',

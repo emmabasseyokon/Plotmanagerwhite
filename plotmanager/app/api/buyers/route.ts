@@ -134,6 +134,31 @@ export async function POST(request: NextRequest) {
       await adminClient.from('payment_schedules').insert(scheduleEntries)
     }
 
+    // Auto-create commission if buyer has an agent
+    if (buyer && insertData.agent_id) {
+      const { data: agent } = await adminClient
+        .from('agents')
+        .select('id, commission_type, commission_rate')
+        .eq('id', insertData.agent_id)
+        .eq('company_id', companyId)
+        .single()
+
+      if (agent && agent.commission_rate > 0) {
+        const commissionAmount = agent.commission_type === 'percentage'
+          ? (buyerFields.total_amount * agent.commission_rate) / 100
+          : agent.commission_rate
+
+        await adminClient.from('commissions').insert({
+          company_id: companyId,
+          agent_id: agent.id,
+          buyer_id: buyer.id,
+          commission_amount: commissionAmount,
+          amount_paid: 0,
+          status: 'pending',
+        })
+      }
+    }
+
     return NextResponse.json({ buyer }, { status: 201 })
   } catch (err) {
     return serverError(err, 'POST /api/buyers')
