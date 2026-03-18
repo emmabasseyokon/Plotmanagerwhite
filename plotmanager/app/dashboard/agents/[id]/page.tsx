@@ -90,8 +90,12 @@ export default async function AgentDetailPage({
   // Compute summary figures
   const totalReferrals = commissions.length
   const totalCommission = commissions.reduce((sum, c) => sum + (c.commission_amount || 0), 0)
-  const totalPaidOut = commissions.reduce((sum, c) => sum + (c.amount_paid || 0), 0)
-  const totalPending = totalCommission - totalPaidOut
+  const totalPaidOut = commissions
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + (c.commission_amount || 0), 0)
+  const totalUnpaid = commissions
+    .filter(c => c.status !== 'paid')
+    .reduce((sum, c) => sum + (c.commission_amount || 0), 0)
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -156,10 +160,10 @@ export default async function AgentDetailPage({
               <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-amber-600" />
               </div>
-              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-sm text-gray-500">Unpaid</p>
             </div>
-            <p className={`text-2xl font-bold ${totalPending > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-              {formatCurrency(Math.max(totalPending, 0))}
+            <p className={`text-2xl font-bold ${totalUnpaid > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {formatCurrency(totalUnpaid)}
             </p>
           </CardContent>
         </Card>
