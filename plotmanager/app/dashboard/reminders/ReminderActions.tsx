@@ -28,7 +28,7 @@ export function ReminderActions({ estates, buyers, canBroadcast }: ReminderActio
 
   return (
     <>
-      <Button onClick={() => setBroadcastOpen(true)}>
+      <Button className="w-full sm:w-auto" onClick={() => setBroadcastOpen(true)}>
         <Send className="w-4 h-4 mr-2" />
         Send Broadcast
       </Button>

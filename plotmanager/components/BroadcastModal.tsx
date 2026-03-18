@@ -177,28 +177,28 @@ export function BroadcastModal({ estates, buyers, isOpen, onClose }: BroadcastMo
                   return (
                     <label
                       key={buyer.id}
-                      className={`flex items-center gap-3 px-3 py-2 ${hasEmail ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                      className={`flex items-start gap-3 px-3 py-2 ${hasEmail ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
                     >
                       <input
                         type="checkbox"
                         checked={selectedBuyerIds.has(buyer.id)}
                         onChange={() => toggleBuyer(buyer.id)}
                         disabled={!hasEmail}
-                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
+                        className="h-4 w-4 mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                       />
                       <div className="min-w-0 flex-1">
                         <p className={`text-sm font-medium truncate ${hasEmail ? 'text-gray-900' : 'text-gray-400'}`}>
                           {buyer.first_name} {buyer.last_name}
                           {!hasEmail && <span className="text-xs ml-1">(no email)</span>}
                         </p>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
-                          {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
-                          {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${BUYER_STATUS_COLORS[buyer.payment_status] || BUYER_STATUS_COLORS.installment}`}>
+                            {BUYER_STATUS_LABELS[buyer.payment_status] || 'Installment'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ALLOCATION_STATUS_COLORS[buyer.allocation_status] || ALLOCATION_STATUS_COLORS.not_allocated}`}>
+                            {ALLOCATION_STATUS_LABELS[buyer.allocation_status] || 'Not Allocated'}
+                          </span>
+                        </div>
                       </div>
                     </label>
                   )

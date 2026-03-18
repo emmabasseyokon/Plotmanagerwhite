@@ -135,28 +135,26 @@ export default async function RemindersPage() {
                 return (
                   <div
                     key={reminder.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-gray-50 rounded-xl"
+                    className="p-4 bg-gray-50 rounded-xl space-y-2"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Link
-                          href={`/dashboard/buyers/${reminder.buyer_id}`}
-                          className="text-sm font-medium text-gray-900 hover:text-primary-600 transition-colors"
-                        >
-                          {buyerName}
-                        </Link>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeColors[reminder.reminder_type] || typeColors.payment_due}`}>
-                          {typeLabels[reminder.reminder_type] || 'Reminder'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          {reminder.sent_via}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 truncate">{reminder.message}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/dashboard/buyers/${reminder.buyer_id}`}
+                        className="text-sm font-medium text-gray-900 hover:text-primary-600 transition-colors"
+                      >
+                        {buyerName}
+                      </Link>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeColors[reminder.reminder_type] || typeColors.payment_due}`}>
+                        {typeLabels[reminder.reminder_type] || 'Reminder'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        {reminder.sent_via}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-auto">
+                        {formatDate(reminder.sent_at || reminder.created_at || '')}
+                      </span>
                     </div>
-                    <div className="text-sm text-gray-400 whitespace-nowrap">
-                      {formatDate(reminder.sent_at || reminder.created_at || '')}
-                    </div>
+                    <p className="text-sm text-gray-500 line-clamp-2">{reminder.message}</p>
                   </div>
                 )
               })}

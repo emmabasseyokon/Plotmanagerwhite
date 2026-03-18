@@ -63,8 +63,8 @@ export function ReminderSettings({ initialEnabled, initialDays }: ReminderSettin
           )}
 
           {/* Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start gap-4 justify-between">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900">Enable auto-reminders</p>
               <p className="text-sm text-gray-500">
                 Automatically send email reminders before payment due dates
@@ -75,7 +75,7 @@ export function ReminderSettings({ initialEnabled, initialDays }: ReminderSettin
               role="switch"
               aria-checked={enabled}
               onClick={() => setEnabled(!enabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
                 enabled ? 'bg-primary-600' : 'bg-gray-200'
               }`}
             >
