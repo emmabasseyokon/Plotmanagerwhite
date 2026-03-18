@@ -18,8 +18,16 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const error = params.get('error')
-    if (error) setAuthError(error)
+    const errorCode = params.get('error')
+    if (errorCode) {
+      const safeMessages: Record<string, string> = {
+        invalid_credentials: 'Invalid email or password. Please try again.',
+        email_not_confirmed: 'Your email has not been confirmed. Please contact your administrator.',
+        session_expired: 'Your session has expired. Please sign in again.',
+        access_denied: 'Access denied. Please contact your administrator.',
+      }
+      setAuthError(safeMessages[errorCode] || 'An authentication error occurred. Please try again.')
+    }
   }, [])
 
   const {

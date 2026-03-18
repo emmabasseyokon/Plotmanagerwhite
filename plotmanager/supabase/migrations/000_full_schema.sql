@@ -71,9 +71,9 @@ CREATE TABLE IF NOT EXISTS estates (
     description TEXT,
     image_url TEXT,
     total_plots INTEGER NOT NULL DEFAULT 0,
-    available_plots INTEGER NOT NULL DEFAULT 0,
+    available_plots INTEGER NOT NULL DEFAULT 0 CHECK (available_plots >= 0),
     price_per_plot NUMERIC(15, 2) DEFAULT 0,
-    plot_sizes JSONB DEFAULT '[]'::jsonb,
+    plot_sizes JSONB DEFAULT '[]'::jsonb CHECK (jsonb_typeof(plot_sizes) = 'array'),
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'sold_out', 'coming_soon')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS buyers (
     allocation_status TEXT NOT NULL DEFAULT 'not_allocated'
         CHECK (allocation_status IN ('allocated', 'not_allocated')),
     payment_proof_url TEXT,
-    documents JSONB DEFAULT '[]'::jsonb,
+    documents JSONB DEFAULT '[]'::jsonb CHECK (jsonb_typeof(documents) = 'array'),
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -432,6 +432,14 @@ CREATE POLICY "Users can insert commission payments in own company"
     ON commission_payments FOR INSERT TO authenticated
     WITH CHECK (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
 
+CREATE POLICY "Users can update own company commission payments"
+    ON commission_payments FOR UPDATE TO authenticated
+    USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
+
+CREATE POLICY "Users can delete own company commission payments"
+    ON commission_payments FOR DELETE TO authenticated
+    USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
+
 -- Reminders: admins can CRUD reminders in their company
 CREATE POLICY "Users can view own company reminders"
     ON reminders FOR SELECT TO authenticated
@@ -440,6 +448,14 @@ CREATE POLICY "Users can view own company reminders"
 CREATE POLICY "Users can insert reminders in own company"
     ON reminders FOR INSERT TO authenticated
     WITH CHECK (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
+
+CREATE POLICY "Users can update own company reminders"
+    ON reminders FOR UPDATE TO authenticated
+    USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
+
+CREATE POLICY "Users can delete own company reminders"
+    ON reminders FOR DELETE TO authenticated
+    USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
 
 -- ============================================
 -- 11. SERVICE ROLE POLICIES (for API operations)
@@ -498,15 +514,15 @@ CREATE POLICY "Authenticated users can upload estate images"
     ON storage.objects FOR INSERT TO authenticated
     WITH CHECK (bucket_id = 'estates');
 
--- Allow authenticated users to update their uploads
-CREATE POLICY "Authenticated users can update estate images"
+-- Allow authenticated users to update their own uploads
+CREATE POLICY "Users can update own estate images"
     ON storage.objects FOR UPDATE TO authenticated
-    USING (bucket_id = 'estates');
+    USING (bucket_id = 'estates' AND owner = auth.uid());
 
--- Allow authenticated users to delete images
-CREATE POLICY "Authenticated users can delete estate images"
+-- Allow authenticated users to delete their own images
+CREATE POLICY "Users can delete own estate images"
     ON storage.objects FOR DELETE TO authenticated
-    USING (bucket_id = 'estates');
+    USING (bucket_id = 'estates' AND owner = auth.uid());
 
 -- Allow public read access to estate images
 CREATE POLICY "Public read access to estate images"
@@ -526,13 +542,13 @@ CREATE POLICY "Authenticated users can upload buyer documents"
     ON storage.objects FOR INSERT TO authenticated
     WITH CHECK (bucket_id = 'buyer-documents');
 
-CREATE POLICY "Authenticated users can update buyer documents"
+CREATE POLICY "Users can update own buyer documents"
     ON storage.objects FOR UPDATE TO authenticated
-    USING (bucket_id = 'buyer-documents');
+    USING (bucket_id = 'buyer-documents' AND owner = auth.uid());
 
-CREATE POLICY "Authenticated users can delete buyer documents"
+CREATE POLICY "Users can delete own buyer documents"
     ON storage.objects FOR DELETE TO authenticated
-    USING (bucket_id = 'buyer-documents');
+    USING (bucket_id = 'buyer-documents' AND owner = auth.uid());
 
 CREATE POLICY "Public read access to buyer documents"
     ON storage.objects FOR SELECT TO public

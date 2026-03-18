@@ -6,14 +6,21 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   // Whitelist only safe internal paths to prevent open redirect
-  const SAFE_PATHS = ['/dashboard', '/dashboard/estates', '/dashboard/buyers', '/dashboard/reminders', '/dashboard/admins', '/dashboard/settings/form']
   const rawNext = requestUrl.searchParams.get('next') ?? '/dashboard'
-  const next = SAFE_PATHS.includes(rawNext) ? rawNext : '/dashboard'
+  const next = rawNext.startsWith('/dashboard') || rawNext === '/reset-password' ? rawNext : '/dashboard'
 
-  const errorDescription = requestUrl.searchParams.get('error_description')
+  const errorDescription = requestUrl.searchParams.get('error_description') || ''
   if (errorDescription) {
     const loginUrl = new URL('/login', requestUrl.origin)
-    loginUrl.searchParams.set('error', errorDescription)
+    // Map raw error descriptions to safe error codes to prevent XSS
+    const errorCode = errorDescription.toLowerCase().includes('invalid')
+      ? 'invalid_credentials'
+      : errorDescription.toLowerCase().includes('confirm')
+        ? 'email_not_confirmed'
+        : errorDescription.toLowerCase().includes('expired')
+          ? 'session_expired'
+          : 'access_denied'
+    loginUrl.searchParams.set('error', errorCode)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -44,7 +51,7 @@ export async function GET(request: Request) {
     }
 
     const loginUrl = new URL('/login', requestUrl.origin)
-    loginUrl.searchParams.set('error', error.message)
+    loginUrl.searchParams.set('error', 'access_denied')
     return NextResponse.redirect(loginUrl)
   }
 

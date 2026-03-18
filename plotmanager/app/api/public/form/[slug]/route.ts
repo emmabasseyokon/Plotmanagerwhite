@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicBuyerFormSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import { checkRateLimit, getRateLimitKey } from '@/lib/rate-limit'
 import type { TablesInsert } from '@/types/database.types'
 
 type PlotSizeEntry = { size: string; price: number; is_default?: boolean }
@@ -64,6 +65,16 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    // Rate limit: 5 submissions per minute per IP
+    const rateLimitKey = getRateLimitKey(request, 'public-form')
+    const { allowed, retryAfterSeconds } = checkRateLimit(rateLimitKey, { maxRequests: 5, windowSeconds: 60 })
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many submissions. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
+      )
+    }
+
     const { slug } = await params
     const company = await getCompanyBySlug(slug)
 

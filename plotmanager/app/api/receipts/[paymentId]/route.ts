@@ -73,9 +73,10 @@ export async function GET(
       outstandingBalance,
     })
 
-    const filename = payment.reference
-      ? `receipt-${payment.reference}.pdf`
-      : `receipt-${payment.id.slice(0, 8)}.pdf`
+    const safeRef = payment.reference
+      ? payment.reference.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 50)
+      : payment.id.slice(0, 8)
+    const filename = `receipt-${safeRef}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
