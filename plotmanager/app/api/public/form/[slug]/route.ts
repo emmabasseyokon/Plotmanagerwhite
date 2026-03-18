@@ -103,16 +103,39 @@ export async function POST(
       return NextResponse.json({ error: 'Not enough available plots in this estate' }, { status: 400 })
     }
 
-    // Duplicate check: same email + estate in last 24 hours (skip if adding another plot)
+    // Calculate total amount for new plots — support "2x 250sqm, 3x 600sqm" format
+    const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
+    const numberOfPlots = data.number_of_plots || 1
+    let newPlotsTotalAmount: number
+
+    if (data.plot_size && plotSizes.length > 0) {
+      const entries = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+      newPlotsTotalAmount = entries.reduce((sum: number, entry: string) => {
+        const qtyMatch = entry.match(/^(\d+)x\s+(.+)$/)
+        const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1
+        const sizeName = qtyMatch ? qtyMatch[2] : entry
+        const matched = plotSizes.find((ps) => ps.size === sizeName)
+        return sum + (matched ? matched.price * qty : 0)
+      }, 0)
+      if (newPlotsTotalAmount === 0) {
+        newPlotsTotalAmount = (estate.price_per_plot || 0) * numberOfPlots
+      }
+    } else {
+      newPlotsTotalAmount = (estate.price_per_plot || 0) * numberOfPlots
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    const isOutright = data.payment_type === 'outright'
+    const initialDeposit = data.initial_deposit || 0
+
+    // Duplicate check: same email + estate (skip if adding another plot)
     if (!data.add_another) {
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const { data: existing } = await adminClient
         .from('buyers')
         .select('id, first_name, last_name, email, phone, plot_size, plot_number, number_of_plots, total_amount, amount_paid, payment_status, purchase_date, created_at')
         .eq('email', data.email)
         .eq('estate_id', data.estate_id)
         .eq('company_id', company.id)
-        .gte('created_at', oneDayAgo)
         .limit(1)
 
       if (existing && existing.length > 0) {
@@ -127,32 +150,144 @@ export async function POST(
       }
     }
 
-    // Calculate total amount — support "2x 250sqm, 3x 600sqm" format or plain sizes
-    const plotSizes = (estate.plot_sizes || []) as PlotSizeEntry[]
-    const numberOfPlots = data.number_of_plots || 1
-    let totalAmount: number
+    // ── ADD ANOTHER PLOT: merge into existing buyer record ──
+    if (data.add_another && data.existing_buyer_id) {
+      const { data: existingBuyer } = await adminClient
+        .from('buyers')
+        .select('*')
+        .eq('id', data.existing_buyer_id)
+        .eq('estate_id', data.estate_id)
+        .eq('company_id', company.id)
+        .single()
 
-    if (data.plot_size && plotSizes.length > 0) {
-      const entries = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
-      totalAmount = entries.reduce((sum: number, entry: string) => {
-        const qtyMatch = entry.match(/^(\d+)x\s+(.+)$/)
-        const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1
-        const sizeName = qtyMatch ? qtyMatch[2] : entry
-        const matched = plotSizes.find((ps) => ps.size === sizeName)
-        return sum + (matched ? matched.price * qty : 0)
-      }, 0)
-      // Fallback if no sizes matched
-      if (totalAmount === 0) {
-        totalAmount = (estate.price_per_plot || 0) * numberOfPlots
+      if (!existingBuyer) {
+        return NextResponse.json({ error: 'Existing buyer not found' }, { status: 404 })
       }
-    } else {
-      totalAmount = (estate.price_per_plot || 0) * numberOfPlots
+
+      // Merge plot sizes: parse existing + new into combined quantities
+      const mergedQuantities: Record<string, number> = {}
+
+      // Parse existing plot_size string
+      if (existingBuyer.plot_size) {
+        const existingEntries = existingBuyer.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+        for (const entry of existingEntries) {
+          const match = entry.match(/^(\d+)x\s+(.+)$/)
+          if (match) {
+            mergedQuantities[match[2]] = (mergedQuantities[match[2]] || 0) + parseInt(match[1])
+          } else {
+            mergedQuantities[entry] = (mergedQuantities[entry] || 0) + 1
+          }
+        }
+      }
+
+      // Parse new plot_size string and add to merged
+      if (data.plot_size) {
+        const newEntries = data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)
+        for (const entry of newEntries) {
+          const match = entry.match(/^(\d+)x\s+(.+)$/)
+          if (match) {
+            mergedQuantities[match[2]] = (mergedQuantities[match[2]] || 0) + parseInt(match[1])
+          } else {
+            mergedQuantities[entry] = (mergedQuantities[entry] || 0) + 1
+          }
+        }
+      }
+
+      // Build merged plot_size string
+      const mergedPlotSize = Object.entries(mergedQuantities)
+        .map(([size, qty]) => `${qty}x ${size}`)
+        .join(', ')
+
+      const mergedPlotCount = Object.values(mergedQuantities).reduce((sum, qty) => sum + qty, 0)
+      const mergedTotalAmount = existingBuyer.total_amount + newPlotsTotalAmount
+      const newAmountPaid = isOutright ? newPlotsTotalAmount : initialDeposit
+      const mergedAmountPaid = existingBuyer.amount_paid + newAmountPaid
+
+      // Determine merged payment status
+      let mergedPaymentStatus = existingBuyer.payment_status
+      if (mergedAmountPaid >= mergedTotalAmount) {
+        mergedPaymentStatus = 'fully_paid'
+      } else if (mergedAmountPaid > 0) {
+        mergedPaymentStatus = 'installment'
+      }
+
+      // Append note about new plots
+      const plotNote = `Added ${numberOfPlots} plot(s) on ${today}: ${data.plot_size || 'N/A'}`
+      const mergedNotes = existingBuyer.notes
+        ? `${existingBuyer.notes}\n${plotNote}`
+        : plotNote
+
+      const { data: updatedBuyer, error: updateError } = await adminClient
+        .from('buyers')
+        .update({
+          plot_size: mergedPlotSize,
+          number_of_plots: mergedPlotCount,
+          total_amount: mergedTotalAmount,
+          amount_paid: mergedAmountPaid,
+          payment_status: mergedPaymentStatus,
+          notes: mergedNotes,
+        })
+        .eq('id', existingBuyer.id)
+        .eq('company_id', company.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 500 })
+      }
+
+      // Record payment for the new plots
+      if (newAmountPaid > 0) {
+        await adminClient.from('payments').insert({
+          company_id: company.id,
+          buyer_id: existingBuyer.id,
+          amount: newAmountPaid,
+          payment_date: data.purchase_date || today,
+          payment_method: 'bank_transfer',
+          reference: null,
+          notes: `Additional plots: ${data.plot_size || numberOfPlots + ' plot(s)'}`,
+        })
+      }
+
+      // Decrement available plots
+      if (isOutright) {
+        const newAvailable = Math.max(0, estate.available_plots - numberOfPlots)
+        await adminClient
+          .from('estates')
+          .update({ available_plots: newAvailable })
+          .eq('id', data.estate_id)
+      }
+
+      // Auto-create commission for the new plots if agent is set
+      const agentId = data.agent_id || existingBuyer.agent_id
+      if (agentId) {
+        const { data: agent } = await adminClient
+          .from('agents')
+          .select('id, commission_type, commission_rate')
+          .eq('id', agentId)
+          .eq('company_id', company.id)
+          .single()
+
+        if (agent && agent.commission_rate > 0) {
+          const commissionAmount = agent.commission_type === 'percentage'
+            ? (newPlotsTotalAmount * agent.commission_rate) / 100
+            : agent.commission_rate
+
+          await adminClient.from('commissions').insert({
+            company_id: company.id,
+            agent_id: agent.id,
+            buyer_id: existingBuyer.id,
+            commission_amount: commissionAmount,
+            amount_paid: 0,
+            status: 'pending',
+          })
+        }
+      }
+
+      return NextResponse.json({ success: true }, { status: 201 })
     }
 
-    const today = new Date().toISOString().split('T')[0]
-    const isOutright = data.payment_type === 'outright'
-    const initialDeposit = data.initial_deposit || 0
-
+    // ── NEW BUYER: insert fresh record ──
     const insertData: TablesInsert<'buyers'> = {
       company_id: company.id,
       first_name: data.first_name,
@@ -168,8 +303,8 @@ export async function POST(
       plot_size: data.plot_size || null,
       number_of_plots: numberOfPlots,
       purchase_date: data.purchase_date || today,
-      total_amount: totalAmount,
-      amount_paid: isOutright ? totalAmount : initialDeposit,
+      total_amount: newPlotsTotalAmount,
+      amount_paid: isOutright ? newPlotsTotalAmount : initialDeposit,
       payment_status: isOutright ? 'fully_paid' : 'installment',
       next_of_kin_name: data.next_of_kin_name || null,
       next_of_kin_phone: data.next_of_kin_phone || null,
@@ -231,7 +366,7 @@ export async function POST(
     // Generate installment schedule
     if (!isOutright && data.installment_duration && buyer) {
       const schedule = generateInstallmentSchedule({
-        total_amount: totalAmount,
+        total_amount: newPlotsTotalAmount,
         initial_deposit: initialDeposit,
         duration_months: data.installment_duration,
         start_date: data.plan_start_date || today,
@@ -259,7 +394,7 @@ export async function POST(
 
       if (agent && agent.commission_rate > 0) {
         const commissionAmount = agent.commission_type === 'percentage'
-          ? (totalAmount * agent.commission_rate) / 100
+          ? (newPlotsTotalAmount * agent.commission_rate) / 100
           : agent.commission_rate
 
         await adminClient.from('commissions').insert({

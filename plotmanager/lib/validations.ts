@@ -163,6 +163,7 @@ export const publicBuyerFormSchema = z.object({
   notes: z.string().max(1000).optional(),
   payment_proof_url: z.string().url().optional().or(z.literal('')),
   add_another: z.boolean().optional(),
+  existing_buyer_id: z.string().uuid().optional(),
 })
 
 export type PublicBuyerFormData = z.infer<typeof publicBuyerFormSchema>

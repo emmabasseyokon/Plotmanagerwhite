@@ -56,7 +56,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates, agents }: P
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [addAnother, setAddAnother] = useState(false)
   const [existingBuyer, setExistingBuyer] = useState<{
-    first_name: string; last_name: string; plot_size: string | null;
+    id: string; first_name: string; last_name: string; plot_size: string | null;
     number_of_plots: number; total_amount: number; amount_paid: number;
     payment_status: string; purchase_date: string | null;
   } | null>(null)
@@ -150,6 +150,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates, agents }: P
           notes: notes || undefined,
           payment_proof_url: paymentProofUrl || undefined,
           add_another: addAnother || undefined,
+          existing_buyer_id: addAnother && existingBuyer ? existingBuyer.id : undefined,
         }),
       })
 
@@ -251,7 +252,6 @@ export function PublicBuyerForm({ companySlug, companyName, estates, agents }: P
               className="w-full mt-4"
               onClick={() => {
                 setAddAnother(true)
-                setExistingBuyer(null)
               }}
             >
               Add Another Plot

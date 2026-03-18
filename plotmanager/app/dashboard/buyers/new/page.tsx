@@ -194,12 +194,15 @@ export default function NewBuyerPage() {
       if (paymentProofUrl) payload.payment_proof_url = paymentProofUrl
 
       // Set payment fields based on payment type
+      const newAmountPaid = paymentType === 'outright'
+        ? (payload.total_amount as number)
+        : initialDeposit
+
       if (paymentType === 'outright') {
-        payload.amount_paid = payload.total_amount
+        payload.amount_paid = newAmountPaid
         payload.payment_status = 'fully_paid'
       } else {
-        // Installment - amount_paid = initial deposit (if any)
-        payload.amount_paid = initialDeposit
+        payload.amount_paid = newAmountPaid
         payload.payment_status = 'installment'
         if (durationMonths > 0 && startDate) {
           payload.installment_plan = {
@@ -211,6 +214,68 @@ export default function NewBuyerPage() {
         }
       }
 
+      // ── ADD ANOTHER PLOT: merge into existing buyer record ──
+      if (fromBuyerId && prefillEstateId) {
+        const existingRes = await fetch(`/api/buyers/${fromBuyerId}`).then((r) => r.json())
+        const existing = existingRes.buyer
+        if (!existing) throw new Error('Existing buyer not found')
+
+        // Merge plot sizes
+        const mergedQuantities: Record<string, number> = {}
+        if (existing.plot_size) {
+          for (const entry of existing.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)) {
+            const match = entry.match(/^(\d+)x\s+(.+)$/)
+            if (match) mergedQuantities[match[2]] = (mergedQuantities[match[2]] || 0) + parseInt(match[1])
+            else mergedQuantities[entry] = (mergedQuantities[entry] || 0) + 1
+          }
+        }
+        if (data.plot_size) {
+          for (const entry of data.plot_size.split(',').map((s: string) => s.trim()).filter(Boolean)) {
+            const match = entry.match(/^(\d+)x\s+(.+)$/)
+            if (match) mergedQuantities[match[2]] = (mergedQuantities[match[2]] || 0) + parseInt(match[1])
+            else mergedQuantities[entry] = (mergedQuantities[entry] || 0) + 1
+          }
+        }
+
+        const mergedPlotSize = Object.entries(mergedQuantities).map(([size, qty]) => `${qty}x ${size}`).join(', ')
+        const mergedPlotCount = Object.values(mergedQuantities).reduce((sum, qty) => sum + qty, 0)
+        const mergedTotalAmount = existing.total_amount + (data.total_amount || 0)
+        const mergedAmountPaid = existing.amount_paid + newAmountPaid
+
+        let mergedPaymentStatus = existing.payment_status
+        if (mergedAmountPaid >= mergedTotalAmount) mergedPaymentStatus = 'fully_paid'
+        else if (mergedAmountPaid > 0) mergedPaymentStatus = 'installment'
+
+        const today = new Date().toISOString().split('T')[0]
+        const plotNote = `Added ${data.number_of_plots || 1} plot(s) on ${today}: ${data.plot_size || 'N/A'}`
+
+        const mergePayload: Record<string, unknown> = {
+          plot_size: mergedPlotSize,
+          number_of_plots: mergedPlotCount,
+          total_amount: mergedTotalAmount,
+          amount_paid: mergedAmountPaid,
+          payment_status: mergedPaymentStatus,
+          notes: existing.notes ? `${existing.notes}\n${plotNote}` : plotNote,
+        }
+        if (data.agent_id) mergePayload.agent_id = data.agent_id
+
+        const res = await fetch(`/api/buyers/${fromBuyerId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mergePayload),
+        })
+
+        if (!res.ok) {
+          const result = await res.json()
+          throw new Error(result.error || 'Failed to add plots')
+        }
+
+        router.push(`/dashboard/buyers/${fromBuyerId}`)
+        router.refresh()
+        return
+      }
+
+      // ── NEW BUYER: create fresh record ──
       const res = await fetch('/api/buyers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
