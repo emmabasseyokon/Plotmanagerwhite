@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent } from '@/components/ui/Card'
-import { BarChart3, TrendingUp, Target, Award } from 'lucide-react'
+import { BarChart3, TrendingUp, Award } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { REFERRAL_OPTIONS } from '@/lib/constants'
 
@@ -64,7 +64,6 @@ export default async function AnalyticsPage() {
     return {
       source,
       ...d,
-      avgDeal: d.buyers > 0 ? d.revenue / d.buyers : 0,
       pctRevenue: buyers.reduce((s, b) => s + (b.total_amount || 0), 0) > 0
         ? (d.revenue / buyers.reduce((s, b) => s + (b.total_amount || 0), 0)) * 100
         : 0,
@@ -74,7 +73,6 @@ export default async function AnalyticsPage() {
   const totalSales = buyers.length
   const totalRevenue = buyers.reduce((s, b) => s + (b.total_amount || 0), 0)
   const totalPlots = buyers.reduce((s, b) => s + (b.number_of_plots || 0), 0)
-  const avgDealSize = totalSales > 0 ? totalRevenue / totalSales : 0
   const topSource = orderedSources.length > 0
     ? orderedSources.reduce((top, s) => sourceMap[s].plots > sourceMap[top].plots ? s : top, orderedSources[0])
     : 'N/A'
@@ -82,7 +80,6 @@ export default async function AnalyticsPage() {
   const stats = [
     { label: 'Total Sales', value: totalSales, icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Total Revenue', value: formatCurrency(totalRevenue), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Avg. Deal Size', value: formatCurrency(avgDealSize), icon: Target, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Top Source', value: topSource, icon: Award, color: 'text-purple-600', bg: 'bg-purple-50' },
   ]
 
@@ -93,7 +90,7 @@ export default async function AnalyticsPage() {
         <p className="text-gray-500 mt-1">Track sales performance by referral source</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -127,7 +124,6 @@ export default async function AnalyticsPage() {
                     <th className="text-right py-3 px-3 font-medium text-gray-600">Plots Sold</th>
                     <th className="text-right py-3 px-3 font-medium text-gray-600">Revenue</th>
                     <th className="text-right py-3 px-3 font-medium text-gray-600">Collected</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">Avg. Deal</th>
                     <th className="text-right py-3 px-3 font-medium text-gray-600">% of Revenue</th>
                   </tr>
                 </thead>
@@ -139,7 +135,6 @@ export default async function AnalyticsPage() {
                       <td className="py-3 px-3 text-right text-gray-700">{row.plots}</td>
                       <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(row.revenue)}</td>
                       <td className="py-3 px-3 text-right text-gray-700">{formatCurrency(row.collected)}</td>
-                      <td className="py-3 px-3 text-right text-gray-700">{formatCurrency(row.avgDeal)}</td>
                       <td className="py-3 px-3 text-right text-gray-700">{row.pctRevenue.toFixed(1)}%</td>
                     </tr>
                   ))}
@@ -151,7 +146,6 @@ export default async function AnalyticsPage() {
                     <td className="py-3 px-3 text-right font-bold text-gray-900">{totalPlots}</td>
                     <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(totalRevenue)}</td>
                     <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(buyers.reduce((s, b) => s + (b.amount_paid || 0), 0))}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(avgDealSize)}</td>
                     <td className="py-3 px-3 text-right font-bold text-gray-900">100%</td>
                   </tr>
                 </tfoot>
