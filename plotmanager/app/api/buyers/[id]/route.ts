@@ -190,7 +190,7 @@ export async function DELETE(
     // Get buyer with estate and payment info before deleting
     const { data: existing } = await adminClient
       .from('buyers')
-      .select('id, estate_id, payment_status')
+      .select('id, estate_id, payment_status, number_of_plots')
       .eq('id', id)
       .eq('company_id', companyId)
       .single()
@@ -212,13 +212,15 @@ export async function DELETE(
       return serverError(error, 'buyers/[id]')
     }
 
-    // Only increment available_plots if buyer had fully paid (plot was claimed)
+    // Increment available_plots if buyer had fully paid (plots were claimed)
     if (estateId && wasFullyPaid) {
+      const plotCount = existing.number_of_plots || 1
       const { data: estate } = await adminClient
         .from('estates').select('available_plots, total_plots').eq('id', estateId).single()
-      if (estate && estate.available_plots < estate.total_plots) {
+      if (estate) {
+        const restored = Math.min(estate.available_plots + plotCount, estate.total_plots)
         await adminClient.from('estates')
-          .update({ available_plots: estate.available_plots + 1 })
+          .update({ available_plots: restored })
           .eq('id', estateId)
       }
     }
