@@ -130,8 +130,7 @@ export default function EditBuyerPage() {
             next_of_kin_address: b.next_of_kin_address || '',
             next_of_kin_relationship: b.next_of_kin_relationship || '',
             agent_id: b.agent_id || '',
-            referral_source: b.referral_source || '',
-            referral_phone: b.referral_phone || '',
+            referral_source: b.agent_id ? 'Agent' : (b.referral_source || ''),
             notes: b.notes || '',
             estate_id: b.estate_id || '',
           })
@@ -659,31 +658,18 @@ export default function EditBuyerPage() {
           </CardContent>
         </Card>
 
-        {/* Agent / Referral */}
+        {/* Referral */}
         <Card>
           <CardHeader>
-            <CardTitle>Agent &amp; Referral Details</CardTitle>
+            <CardTitle>Referral Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Referring Agent</label>
-              <select
-                className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                {...register('agent_id')}
-              >
-                <option value="">No agent</option>
-                {agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.first_name} {agent.last_name}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">How did they hear about us?</label>
               <select
                 className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 {...register('referral_source')}
+                onChange={(e) => { setValue('referral_source', e.target.value); if (e.target.value !== 'Agent') setValue('agent_id', '') }}
               >
                 <option value="">Select</option>
                 {REFERRAL_OPTIONS.map((opt) => (
@@ -691,11 +677,23 @@ export default function EditBuyerPage() {
                 ))}
               </select>
             </div>
-            <Input
-              label="Referrer Phone Number"
-              placeholder="Phone number of who referred them"
-              {...register('referral_phone')}
-            />
+            {watch('referral_source') === 'Agent' && agents.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Agent</label>
+                <select
+                  className="flex h-11 w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-base text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  {...register('agent_id')}
+                >
+                  <option value="">Select agent</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.first_name} {agent.last_name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Commission will be auto-calculated based on agent settings</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -176,7 +176,7 @@ export async function POST(
       next_of_kin_address: data.next_of_kin_address || null,
       next_of_kin_relationship: data.next_of_kin_relationship || null,
       referral_source: data.referral_source || null,
-      referral_phone: data.referral_phone || null,
+      agent_id: data.agent_id || null,
       notes: data.notes || null,
       payment_proof_url: data.payment_proof_url || null,
     }
@@ -246,6 +246,31 @@ export async function POST(
       }))
 
       await adminClient.from('payment_schedules').insert(scheduleEntries)
+    }
+
+    // Auto-create commission if buyer has an agent
+    if (buyer && insertData.agent_id) {
+      const { data: agent } = await adminClient
+        .from('agents')
+        .select('id, commission_type, commission_rate')
+        .eq('id', insertData.agent_id)
+        .eq('company_id', company.id)
+        .single()
+
+      if (agent && agent.commission_rate > 0) {
+        const commissionAmount = agent.commission_type === 'percentage'
+          ? (totalAmount * agent.commission_rate) / 100
+          : agent.commission_rate
+
+        await adminClient.from('commissions').insert({
+          company_id: company.id,
+          agent_id: agent.id,
+          buyer_id: buyer.id,
+          commission_amount: commissionAmount,
+          amount_paid: 0,
+          status: 'pending',
+        })
+      }
     }
 
     return NextResponse.json({ success: true }, { status: 201 })

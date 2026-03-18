@@ -102,7 +102,7 @@ export const COMMISSION_TYPE_LABELS: Record<string, string> = {
 
 // Referral source options
 export const REFERRAL_OPTIONS = [
-  'Instagram', 'Facebook', 'Twitter/X', 'TikTok', 'YouTube',
-  'Google Search', 'Friend/Family', 'Agent/Referral', 'Billboard/Flyer',
-  'Radio/TV', 'Website', 'Other',
+  'Instagram', 'Facebook', 'Twitter/X', 'TikTok',
+  'Friend/Referral', 'Agent', 'Billboard', 'Google',
+  'Newspaper/Magazine', 'Radio/TV', 'Other',
 ]

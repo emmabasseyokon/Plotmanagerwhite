@@ -22,24 +22,23 @@ interface Estate {
   plot_sizes: PlotSizeOption[]
 }
 
+interface Agent {
+  id: string
+  first_name: string
+  last_name: string
+}
+
 interface PublicBuyerFormProps {
   companySlug: string
   companyName: string
   estates: Estate[]
+  agents: Agent[]
 }
 
 const REFERRAL_OPTIONS = [
-  'Instagram',
-  'Facebook',
-  'Twitter/X',
-  'TikTok',
-  'Friend/Referral',
-  'Agent',
-  'Billboard',
-  'Google',
-  'Newspaper/Magazine',
-  'Radio/TV',
-  'Other',
+  'Instagram', 'Facebook', 'Twitter/X', 'TikTok',
+  'Friend/Referral', 'Agent', 'Billboard', 'Google',
+  'Newspaper/Magazine', 'Radio/TV', 'Other',
 ]
 
 const NIGERIAN_STATES = [
@@ -50,7 +49,7 @@ const NIGERIAN_STATES = [
   'Yobe', 'Zamfara',
 ]
 
-export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuyerFormProps) {
+export function PublicBuyerForm({ companySlug, companyName, estates, agents }: PublicBuyerFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,7 +84,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
   const [nokAddress, setNokAddress] = useState('')
   const [nokRelationship, setNokRelationship] = useState('')
   const [referralSource, setReferralSource] = useState('')
-  const [referralPhone, setReferralPhone] = useState('')
+  const [agentId, setAgentId] = useState('')
   const [notes, setNotes] = useState('')
   const [paymentProofUrl, setPaymentProofUrl] = useState('')
 
@@ -147,7 +146,7 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
           next_of_kin_address: nokAddress || undefined,
           next_of_kin_relationship: nokRelationship || undefined,
           referral_source: referralSource || undefined,
-          referral_phone: referralPhone || undefined,
+          agent_id: referralSource === 'Agent' && agentId ? agentId : undefined,
           notes: notes || undefined,
           payment_proof_url: paymentProofUrl || undefined,
           add_another: addAnother || undefined,
@@ -673,19 +672,26 @@ export function PublicBuyerForm({ companySlug, companyName, estates }: PublicBuy
         <CardContent className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">How did you hear about us?</label>
-            <select className={selectClass} value={referralSource} onChange={(e) => setReferralSource(e.target.value)}>
+            <select className={selectClass} value={referralSource} onChange={(e) => { setReferralSource(e.target.value); if (e.target.value !== 'Agent') setAgentId('') }}>
               <option value="">Select</option>
               {REFERRAL_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           </div>
-          <Input
-            label="Referrer Phone Number"
-            placeholder="Phone number of who referred you"
-            value={referralPhone}
-            onChange={(e) => setReferralPhone(e.target.value)}
-          />
+          {referralSource === 'Agent' && agents.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Agent</label>
+              <select className={selectClass} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+                <option value="">Select agent</option>
+                {agents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.first_name} {agent.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </CardContent>
       </Card>
 

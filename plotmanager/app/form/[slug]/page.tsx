@@ -57,6 +57,14 @@ export default async function PublicFormPage({ params }: FormPageProps) {
     plot_sizes: (e.plot_sizes || []) as Array<{ size: string; price: number }>,
   }))
 
+  // Fetch active agents for referral selection
+  const { data: agentsRaw } = await adminClient
+    .from('agents')
+    .select('id, first_name, last_name')
+    .eq('company_id', company.id)
+    .eq('status', 'active')
+    .order('first_name')
+
   return (
     <div>
       {/* Header */}
@@ -80,6 +88,7 @@ export default async function PublicFormPage({ params }: FormPageProps) {
           companySlug={company.slug}
           companyName={company.name}
           estates={estates}
+          agents={agentsRaw || []}
         />
       </div>
     </div>

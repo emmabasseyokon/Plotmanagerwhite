@@ -159,7 +159,7 @@ export const publicBuyerFormSchema = z.object({
   next_of_kin_address: z.string().optional(),
   next_of_kin_relationship: z.string().optional(),
   referral_source: z.string().optional(),
-  referral_phone: z.string().optional(),
+  agent_id: z.string().uuid().optional().or(z.literal('')),
   notes: z.string().max(1000).optional(),
   payment_proof_url: z.string().url().optional().or(z.literal('')),
   add_another: z.boolean().optional(),
