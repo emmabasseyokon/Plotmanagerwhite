@@ -164,9 +164,6 @@ export default async function BuyerDetailPage({
               {buyer.first_name} {buyer.last_name}
             </h1>
           </div>
-          <p className="text-gray-500 mt-1">
-            Added {formatDate(buyer.created_at)}
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <SendReminder

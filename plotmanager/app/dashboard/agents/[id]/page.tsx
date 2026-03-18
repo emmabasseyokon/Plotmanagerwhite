@@ -109,13 +109,7 @@ export default async function AgentDetailPage({
             <h1 className="font-display text-3xl font-bold text-gray-900">
               {agent.first_name} {agent.last_name}
             </h1>
-            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${AGENT_STATUS_COLORS[agent.status] || AGENT_STATUS_COLORS.active}`}>
-              {AGENT_STATUS_LABELS[agent.status] || 'Active'}
-            </span>
           </div>
-          <p className="text-gray-500 mt-1">
-            Added {formatDate(agent.created_at)}
-          </p>
         </div>
         <Link href={`/dashboard/agents/${id}/edit`}>
           <Button>Edit Agent</Button>
@@ -205,6 +199,12 @@ export default async function AgentDetailPage({
             {!agent.email && !agent.phone && (
               <p className="text-sm text-gray-400">No contact information provided.</p>
             )}
+            <div className="border-t border-gray-100 pt-4 mt-2">
+              <p className="text-xs text-gray-500 mb-1">Status</p>
+              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${AGENT_STATUS_COLORS[agent.status] || AGENT_STATUS_COLORS.active}`}>
+                {AGENT_STATUS_LABELS[agent.status] || 'Active'}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
