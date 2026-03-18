@@ -62,8 +62,8 @@ export function FormSettingsClient({ formEnabled: initialEnabled, formUrl, slug 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start gap-4 justify-between">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900">
                 {enabled ? 'Form is live' : 'Form is disabled'}
               </p>
@@ -76,7 +76,7 @@ export function FormSettingsClient({ formEnabled: initialEnabled, formUrl, slug 
             <button
               onClick={handleToggle}
               disabled={saving}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
                 enabled ? 'bg-primary-600' : 'bg-gray-300'
               } ${saving ? 'opacity-50' : ''}`}
             >
@@ -101,8 +101,8 @@ export function FormSettingsClient({ formEnabled: initialEnabled, formUrl, slug 
               <p className="text-sm text-gray-500">
                 Share this link with potential buyers or add it to your website.
               </p>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 font-mono truncate">
+              <div className="space-y-2">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 font-mono break-all">
                   {formUrl}
                 </div>
                 <div className="flex items-center gap-2">
@@ -110,19 +110,19 @@ export function FormSettingsClient({ formEnabled: initialEnabled, formUrl, slug 
                     variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(formUrl, 'url')}
-                    className="shrink-0 flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none"
                   >
                     {copiedUrl ? (
                       <><Check className="w-4 h-4 mr-1" /> Copied</>
                     ) : (
-                      <><Copy className="w-4 h-4 mr-1" /> Copy</>
+                      <><Copy className="w-4 h-4 mr-1" /> Copy Link</>
                     )}
                   </Button>
                   <a
                     href={formUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0 flex-1 sm:flex-none"
+                    className="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex-1 sm:flex-none"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Preview
@@ -144,20 +144,20 @@ export function FormSettingsClient({ formEnabled: initialEnabled, formUrl, slug 
               <p className="text-sm text-gray-500">
                 Add this code to your website (WordPress, Elementor, or any HTML page) to embed the registration form directly.
               </p>
-              <div className="relative">
-                <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
+              <div className="space-y-2">
+                <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs sm:text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
                   {embedCode}
                 </pre>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => copyToClipboard(embedCode, 'embed')}
-                  className="absolute top-2 right-2 bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  className="w-full sm:w-auto"
                 >
                   {copiedEmbed ? (
                     <><Check className="w-4 h-4 mr-1" /> Copied</>
                   ) : (
-                    <><Copy className="w-4 h-4 mr-1" /> Copy</>
+                    <><Copy className="w-4 h-4 mr-1" /> Copy Embed Code</>
                   )}
                 </Button>
               </div>
