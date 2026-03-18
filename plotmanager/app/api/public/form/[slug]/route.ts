@@ -322,6 +322,7 @@ export async function POST(
       }
 
       // Auto-create commission for the new plots if agent is set
+      // For outright: commission on full amount. For installment: commission on initial deposit only.
       const agentId = data.agent_id || existingBuyer.agent_id
       if (agentId) {
         const { data: agent } = await adminClient
@@ -332,8 +333,9 @@ export async function POST(
           .single()
 
         if (agent && agent.commission_rate > 0) {
+          const commissionBase = isOutright ? newPlotsTotalAmount : initialDeposit
           const commissionAmount = agent.commission_type === 'percentage'
-            ? (newPlotsTotalAmount * agent.commission_rate) / 100
+            ? (commissionBase * agent.commission_rate) / 100
             : agent.commission_rate
 
           await adminClient.from('commissions').insert({
@@ -447,6 +449,7 @@ export async function POST(
     }
 
     // Auto-create commission if buyer has an agent
+    // For outright: commission on full amount. For installment: commission on initial deposit only.
     if (buyer && insertData.agent_id) {
       const { data: agent } = await adminClient
         .from('agents')
@@ -456,8 +459,9 @@ export async function POST(
         .single()
 
       if (agent && agent.commission_rate > 0) {
+        const commissionBase = isOutright ? newPlotsTotalAmount : initialDeposit
         const commissionAmount = agent.commission_type === 'percentage'
-          ? (newPlotsTotalAmount * agent.commission_rate) / 100
+          ? (commissionBase * agent.commission_rate) / 100
           : agent.commission_rate
 
         await adminClient.from('commissions').insert({

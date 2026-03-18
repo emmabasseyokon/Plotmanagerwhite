@@ -137,6 +137,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-create commission if buyer has an agent
+    // For outright: commission on full amount. For installment: commission on initial deposit only.
+    // Subsequent installment payments will add to the commission via the payments API.
     if (buyer && insertData.agent_id) {
       const { data: agent } = await adminClient
         .from('agents')
@@ -146,8 +148,10 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (agent && agent.commission_rate > 0) {
+        const isOutright = insertData.payment_status === 'fully_paid'
+        const commissionBase = isOutright ? buyerFields.total_amount : (insertData.amount_paid || 0)
         const commissionAmount = agent.commission_type === 'percentage'
-          ? (buyerFields.total_amount * agent.commission_rate) / 100
+          ? (commissionBase * agent.commission_rate) / 100
           : agent.commission_rate
 
         await adminClient.from('commissions').insert({

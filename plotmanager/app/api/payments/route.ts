@@ -201,6 +201,61 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-add commission for this payment if buyer has an agent (installment commission accrual)
+    const { data: buyerAgent } = await adminClient
+      .from('buyers')
+      .select('agent_id')
+      .eq('id', parsed.data.buyer_id)
+      .eq('company_id', companyId)
+      .single()
+
+    if (buyerAgent?.agent_id) {
+      const { data: agent } = await adminClient
+        .from('agents')
+        .select('id, commission_type, commission_rate')
+        .eq('id', buyerAgent.agent_id)
+        .eq('company_id', companyId)
+        .single()
+
+      if (agent && agent.commission_rate > 0) {
+        const paymentCommission = agent.commission_type === 'percentage'
+          ? (parsed.data.amount * agent.commission_rate) / 100
+          : 0 // Flat rate is already fully applied at buyer creation
+
+        if (paymentCommission > 0) {
+          // Find existing commission record for this buyer-agent pair and increment
+          const { data: existingCommission } = await adminClient
+            .from('commissions')
+            .select('id, commission_amount')
+            .eq('buyer_id', parsed.data.buyer_id)
+            .eq('agent_id', agent.id)
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (existingCommission) {
+            await adminClient
+              .from('commissions')
+              .update({
+                commission_amount: existingCommission.commission_amount + paymentCommission,
+              })
+              .eq('id', existingCommission.id)
+          } else {
+            // No existing commission — create one (edge case: agent assigned after initial purchase)
+            await adminClient.from('commissions').insert({
+              company_id: companyId,
+              agent_id: agent.id,
+              buyer_id: parsed.data.buyer_id,
+              commission_amount: paymentCommission,
+              amount_paid: 0,
+              status: 'pending',
+            })
+          }
+        }
+      }
+    }
+
     return NextResponse.json({ payment, newAmountPaid, newPaymentStatus }, { status: 201 })
   } catch (err) {
     return serverError(err, 'POST /api/payments')
