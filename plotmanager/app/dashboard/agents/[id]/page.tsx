@@ -15,10 +15,9 @@ import {
 import {
   AGENT_STATUS_COLORS,
   AGENT_STATUS_LABELS,
-  COMMISSION_STATUS_COLORS,
-  COMMISSION_STATUS_LABELS,
   COMMISSION_TYPE_LABELS,
 } from '@/lib/constants'
+import { CommissionStatusToggle } from '@/components/CommissionStatusToggle'
 
 export default async function AgentDetailPage({
   params,
@@ -344,9 +343,10 @@ export default async function AgentDetailPage({
                         {formatCurrency(commission.amount_paid)}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${COMMISSION_STATUS_COLORS[commission.status] || COMMISSION_STATUS_COLORS.pending}`}>
-                          {COMMISSION_STATUS_LABELS[commission.status] || 'Pending'}
-                        </span>
+                        <CommissionStatusToggle
+                          commissionId={commission.id}
+                          currentStatus={commission.status}
+                        />
                       </td>
                     </tr>
                   ))}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Building, Users } from 'lucide-react'
+import { ArrowLeft, MapPin, Building, Users, Calendar } from 'lucide-react'
 import { EstateActions } from '@/components/EstateActions'
 
 const statusColors: Record<string, string> = {
@@ -98,9 +98,6 @@ export default async function EstateDetailPage({
               {estate.name}
             </h1>
           </div>
-          <p className="text-gray-500 mt-1">
-            Added {formatDate(estate.created_at)}
-          </p>
         </div>
         <EstateActions estateId={estate.id} estateName={estate.name} />
       </div>
@@ -190,6 +187,15 @@ export default async function EstateDetailPage({
                 <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusColors[estate.status] || statusColors.active}`}>
                   {statusLabels[estate.status] || 'Active'}
                 </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-purple-50 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Created Date</p>
+                <p className="text-sm text-gray-900">{formatDate(estate.created_at)}</p>
               </div>
             </div>
             {estate.description && (
