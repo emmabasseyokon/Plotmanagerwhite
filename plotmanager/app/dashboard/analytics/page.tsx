@@ -54,11 +54,10 @@ export default async function AnalyticsPage() {
     sourceMap[source].collected += buyer.amount_paid || 0
   }
 
-  // Sort by REFERRAL_OPTIONS order, then any remaining
-  const orderedSources = [
-    ...REFERRAL_OPTIONS.filter(s => sourceMap[s]),
-    ...Object.keys(sourceMap).filter(s => !REFERRAL_OPTIONS.includes(s)),
-  ]
+  // Sort by plots sold (descending)
+  const orderedSources = Object.keys(sourceMap).sort(
+    (a, b) => sourceMap[b].plots - sourceMap[a].plots
+  )
 
   const tableData = orderedSources.map(source => {
     const d = sourceMap[source]
@@ -77,7 +76,7 @@ export default async function AnalyticsPage() {
   const totalPlots = buyers.reduce((s, b) => s + (b.number_of_plots || 0), 0)
   const avgDealSize = totalSales > 0 ? totalRevenue / totalSales : 0
   const topSource = orderedSources.length > 0
-    ? orderedSources.reduce((top, s) => sourceMap[s].buyers > sourceMap[top].buyers ? s : top, orderedSources[0])
+    ? orderedSources.reduce((top, s) => sourceMap[s].plots > sourceMap[top].plots ? s : top, orderedSources[0])
     : 'N/A'
 
   const stats = [
