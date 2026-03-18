@@ -56,6 +56,21 @@ export default async function AgentsPage({
     status: string
   }>
 
+  // Fetch referral counts per agent
+  const agentIds = agents.map(a => a.id)
+  const referralCounts: Record<string, number> = {}
+  if (agentIds.length > 0) {
+    const { data: commissionsRaw } = await supabase
+      .from('commissions')
+      .select('agent_id')
+      .eq('company_id', companyId)
+      .in('agent_id', agentIds)
+
+    for (const c of commissionsRaw || []) {
+      referralCounts[c.agent_id] = (referralCounts[c.agent_id] || 0) + 1
+    }
+  }
+
   const activeStatus = params.status || 'all'
 
   return (
@@ -126,6 +141,7 @@ export default async function AgentsPage({
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Name</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Phone</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Commission</th>
+                    <th className="text-center text-sm font-medium text-gray-500 px-6 py-4">Referrals</th>
                     <th className="text-left text-sm font-medium text-gray-500 px-6 py-4">Status</th>
                   </tr>
                 </thead>
@@ -145,6 +161,9 @@ export default async function AgentsPage({
                         {agent.commission_type === 'percentage'
                           ? `${agent.commission_rate}%`
                           : formatCurrency(agent.commission_rate)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-gray-600">
+                        {referralCounts[agent.id] || 0}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${AGENT_STATUS_COLORS[agent.status] || AGENT_STATUS_COLORS.active}`}>
@@ -178,6 +197,7 @@ export default async function AgentsPage({
                   </p>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">{agent.phone || 'No phone'}</span>
+                    <span className="text-gray-500">Referrals: {referralCounts[agent.id] || 0}</span>
                     <span className="text-gray-900 font-medium">
                       {agent.commission_type === 'percentage'
                         ? `${agent.commission_rate}%`

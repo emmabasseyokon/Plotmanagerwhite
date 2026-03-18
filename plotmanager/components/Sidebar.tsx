@@ -27,13 +27,13 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Estates', href: '/dashboard/estates', icon: Building },
     { name: 'Buyers', href: '/dashboard/buyers', icon: Users },
     { name: 'Agents', href: '/dashboard/agents', icon: UserCheck },
     { name: 'Reminders', href: '/dashboard/reminders', icon: Bell },
     ...(userRole === 'super_admin'
       ? [
+          { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
           { name: 'Admins', href: '/dashboard/admins', icon: UserCog },
           { name: 'Settings', href: '/dashboard/settings/form', icon: Settings },
         ]
