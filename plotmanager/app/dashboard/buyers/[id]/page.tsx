@@ -160,12 +160,12 @@ export default async function BuyerDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-bold text-gray-900">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900">
               {buyer.first_name} {buyer.last_name}
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <SendReminder
             buyerId={buyer.id}
             buyerName={`${buyer.first_name} ${buyer.last_name}`}
@@ -183,7 +183,7 @@ export default async function BuyerDetailPage({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 break-all">
               {formatCurrency(buyer.total_amount || 0)}
             </p>
           </CardContent>
@@ -191,7 +191,7 @@ export default async function BuyerDetailPage({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-gray-500 mb-1">Amount Paid</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-xl sm:text-2xl font-bold text-green-600 break-all">
               {formatCurrency(buyer.amount_paid || 0)}
             </p>
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
@@ -206,7 +206,7 @@ export default async function BuyerDetailPage({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-gray-500 mb-1">Outstanding Balance</p>
-            <p className={`text-2xl font-bold ${outstanding > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+            <p className={`text-xl sm:text-2xl font-bold break-all ${outstanding > 0 ? 'text-amber-600' : 'text-green-600'}`}>
               {formatCurrency(Math.max(outstanding, 0))}
             </p>
           </CardContent>
@@ -217,7 +217,7 @@ export default async function BuyerDetailPage({
               <p className="text-sm text-gray-500 mb-1">Next Installment</p>
               {nextInstallment ? (
                 <>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600 break-all">
                     {formatCurrency(nextInstallment.expected_amount - nextInstallment.paid_amount)}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
@@ -595,22 +595,22 @@ export default async function BuyerDetailPage({
               {payments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
                       <DollarSign className="w-5 h-5 text-green-600" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium text-gray-900">
                         {formatCurrency(payment.amount)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 truncate">
                         {formatDate(payment.payment_date)} via {PAYMENT_METHOD_LABELS[payment.payment_method] || payment.payment_method}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 ml-13 sm:ml-0">
                     {payment.reference && (
                       <div className="text-right">
                         <p className="text-xs text-gray-400">Ref</p>

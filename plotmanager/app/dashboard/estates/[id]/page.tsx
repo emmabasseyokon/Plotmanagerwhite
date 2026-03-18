@@ -94,7 +94,7 @@ export default async function EstateDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-bold text-gray-900">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900">
               {estate.name}
             </h1>
           </div>

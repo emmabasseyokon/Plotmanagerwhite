@@ -109,7 +109,7 @@ export default async function AgentDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-bold text-gray-900">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900">
               {agent.first_name} {agent.last_name}
             </h1>
           </div>
@@ -140,7 +140,7 @@ export default async function AgentDetailPage({
               </div>
               <p className="text-sm text-gray-500">Total Commission</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalCommission)}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{formatCurrency(totalCommission)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -151,7 +151,7 @@ export default async function AgentDetailPage({
               </div>
               <p className="text-sm text-gray-500">Paid Out</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalPaidOut)}</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-600 truncate">{formatCurrency(totalPaidOut)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -162,7 +162,7 @@ export default async function AgentDetailPage({
               </div>
               <p className="text-sm text-gray-500">Unpaid</p>
             </div>
-            <p className={`text-2xl font-bold ${totalUnpaid > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`text-lg sm:text-2xl font-bold truncate ${totalUnpaid > 0 ? 'text-red-600' : 'text-green-600'}`}>
               {formatCurrency(totalUnpaid)}
             </p>
           </CardContent>

@@ -113,9 +113,9 @@ export default async function DashboardPage() {
                   <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center`}>
                     <Icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>

@@ -100,9 +100,9 @@ export default async function AnalyticsPage() {
                   <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center`}>
                     <Icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
@@ -115,42 +115,96 @@ export default async function AnalyticsPage() {
         <CardContent className="p-6">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-4">Breakdown by Source</h2>
           {tableData.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-3 font-medium text-gray-600">Source</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">Buyers</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">Plots Sold</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">Revenue</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">Collected</th>
-                    <th className="text-right py-3 px-3 font-medium text-gray-600">% of Revenue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {tableData.map((row) => (
-                    <tr key={row.source} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-3 font-medium text-gray-900">{row.source}</td>
-                      <td className="py-3 px-3 text-right text-gray-700">{row.buyers}</td>
-                      <td className="py-3 px-3 text-right text-gray-700">{row.plots}</td>
-                      <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(row.revenue)}</td>
-                      <td className="py-3 px-3 text-right text-gray-700">{formatCurrency(row.collected)}</td>
-                      <td className="py-3 px-3 text-right text-gray-700">{row.pctRevenue.toFixed(1)}%</td>
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-3 font-medium text-gray-600">Source</th>
+                      <th className="text-right py-3 px-3 font-medium text-gray-600">Buyers</th>
+                      <th className="text-right py-3 px-3 font-medium text-gray-600">Plots Sold</th>
+                      <th className="text-right py-3 px-3 font-medium text-gray-600">Revenue</th>
+                      <th className="text-right py-3 px-3 font-medium text-gray-600">Collected</th>
+                      <th className="text-right py-3 px-3 font-medium text-gray-600">% of Revenue</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-gray-300 bg-gray-50">
-                    <td className="py-3 px-3 font-bold text-gray-900">Total</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{totalSales}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{totalPlots}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(totalRevenue)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(buyers.reduce((s, b) => s + (b.amount_paid || 0), 0))}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">100%</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {tableData.map((row) => (
+                      <tr key={row.source} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-3 font-medium text-gray-900">{row.source}</td>
+                        <td className="py-3 px-3 text-right text-gray-700">{row.buyers}</td>
+                        <td className="py-3 px-3 text-right text-gray-700">{row.plots}</td>
+                        <td className="py-3 px-3 text-right font-medium text-gray-900">{formatCurrency(row.revenue)}</td>
+                        <td className="py-3 px-3 text-right text-gray-700">{formatCurrency(row.collected)}</td>
+                        <td className="py-3 px-3 text-right text-gray-700">{row.pctRevenue.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-gray-300 bg-gray-50">
+                      <td className="py-3 px-3 font-bold text-gray-900">Total</td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-900">{totalSales}</td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-900">{totalPlots}</td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(totalRevenue)}</td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-900">{formatCurrency(buyers.reduce((s, b) => s + (b.amount_paid || 0), 0))}</td>
+                      <td className="py-3 px-3 text-right font-bold text-gray-900">100%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {tableData.map((row) => (
+                  <div key={row.source} className="py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-900">{row.source}</p>
+                      <span className="text-xs text-gray-500">{row.pctRevenue.toFixed(1)}% of revenue</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-500">Buyers</p>
+                        <p className="font-medium text-gray-700">{row.buyers}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Plots Sold</p>
+                        <p className="font-medium text-gray-700">{row.plots}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Revenue</p>
+                        <p className="font-medium text-gray-900">{formatCurrency(row.revenue)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Collected</p>
+                        <p className="font-medium text-gray-700">{formatCurrency(row.collected)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="py-3 bg-gray-50 -mx-6 px-6 mt-2">
+                  <p className="font-bold text-gray-900 mb-2">Total</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-500">Buyers</p>
+                      <p className="font-bold text-gray-900">{totalSales}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Plots</p>
+                      <p className="font-bold text-gray-900">{totalPlots}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Revenue</p>
+                      <p className="font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Collected</p>
+                      <p className="font-bold text-gray-900">{formatCurrency(buyers.reduce((s, b) => s + (b.amount_paid || 0), 0))}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           ) : (
             <p className="text-sm text-gray-400 text-center py-8">No sales data yet.</p>
           )}
