@@ -20,7 +20,15 @@ interface ReferralData {
 
 interface ReferralChartsProps {
   data: ReferralData[]
-  formatCurrency: (amount: number) => string
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 const COLORS = [
@@ -41,7 +49,7 @@ const CustomTooltip = ({ active, payload, label, isCurrency, formatCurrency }: a
   )
 }
 
-export function ReferralCharts({ data, formatCurrency }: ReferralChartsProps) {
+export function ReferralCharts({ data }: ReferralChartsProps) {
   if (data.length === 0) {
     return (
       <p className="text-gray-500 text-center py-12">No sales data yet.</p>

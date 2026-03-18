@@ -126,7 +126,7 @@ export default async function AnalyticsPage() {
       <Card>
         <CardContent className="p-6">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-6">Referral Source Performance</h2>
-          <ReferralCharts data={chartData} formatCurrency={formatCurrency} />
+          <ReferralCharts data={chartData} />
         </CardContent>
       </Card>
 
