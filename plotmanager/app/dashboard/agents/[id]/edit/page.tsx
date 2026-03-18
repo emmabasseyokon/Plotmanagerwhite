@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 import Link from 'next/link'
 
 const inputClassName =
@@ -23,6 +23,8 @@ export default function EditAgentPage() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -30,6 +32,7 @@ export default function EditAgentPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<AgentFormData>({
     resolver: zodResolver(agentSchema),
   })
@@ -85,10 +88,7 @@ export default function EditAgentPage() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
-      return
-    }
-
+    setIsDeleting(true)
     try {
       const res = await fetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
@@ -103,6 +103,8 @@ export default function EditAgentPage() {
       router.refresh()
     } catch (err: any) {
       setServerError(err.message)
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -264,7 +266,7 @@ export default function EditAgentPage() {
             type="button"
             variant="outline"
             className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             Delete Agent
           </Button>
@@ -278,6 +280,43 @@ export default function EditAgentPage() {
           </div>
         </div>
       </form>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => !isDeleting && setShowDeleteConfirm(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Agent</h3>
+              <button
+                onClick={() => !isDeleting && setShowDeleteConfirm(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-medium text-gray-900">{watch('first_name')} {watch('last_name')}</span>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDelete}
+                isLoading={isDeleting}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
