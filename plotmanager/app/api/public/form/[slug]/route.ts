@@ -217,16 +217,35 @@ export async function POST(
         ? `${existingBuyer.notes}\n${plotNote}`
         : plotNote
 
+      // Append new payment proof to documents array
+      const existingDocs = Array.isArray(existingBuyer.documents) ? existingBuyer.documents : []
+      const updatedDocs = data.payment_proof_url
+        ? [...existingDocs, { url: data.payment_proof_url, label: `Proof - ${data.plot_size || 'Additional plot'}`, date: today }]
+        : existingDocs
+
+      // Build update payload
+      const updatePayload: Record<string, unknown> = {
+        plot_size: mergedPlotSize,
+        number_of_plots: mergedPlotCount,
+        total_amount: mergedTotalAmount,
+        amount_paid: mergedAmountPaid,
+        payment_status: mergedPaymentStatus,
+        notes: mergedNotes,
+        documents: updatedDocs,
+      }
+
+      // Update installment plan fields if new plots are on installment
+      const planStartDate = data.plan_start_date || today
+      if (!isOutright && data.installment_duration) {
+        updatePayload.has_installment_plan = true
+        updatePayload.plan_duration_months = data.installment_duration
+        updatePayload.plan_start_date = planStartDate
+        updatePayload.initial_deposit = (existingBuyer.initial_deposit || 0) + initialDeposit
+      }
+
       const { data: updatedBuyer, error: updateError } = await adminClient
         .from('buyers')
-        .update({
-          plot_size: mergedPlotSize,
-          number_of_plots: mergedPlotCount,
-          total_amount: mergedTotalAmount,
-          amount_paid: mergedAmountPaid,
-          payment_status: mergedPaymentStatus,
-          notes: mergedNotes,
-        })
+        .update(updatePayload)
         .eq('id', existingBuyer.id)
         .eq('company_id', company.id)
         .select()
@@ -247,6 +266,39 @@ export async function POST(
           reference: null,
           notes: `Additional plots: ${data.plot_size || numberOfPlots + ' plot(s)'}`,
         })
+      }
+
+      // Generate installment schedule for the new plots
+      if (!isOutright && data.installment_duration) {
+        const schedule = generateInstallmentSchedule({
+          total_amount: newPlotsTotalAmount,
+          initial_deposit: initialDeposit,
+          duration_months: data.installment_duration,
+          start_date: planStartDate,
+        })
+
+        // Get the highest existing installment number to continue numbering
+        const { data: existingSchedules } = await adminClient
+          .from('payment_schedules')
+          .select('installment_number')
+          .eq('buyer_id', existingBuyer.id)
+          .eq('company_id', company.id)
+          .order('installment_number', { ascending: false })
+          .limit(1)
+
+        const lastNumber = existingSchedules?.[0]?.installment_number || 0
+
+        const scheduleEntries = schedule.map((entry) => ({
+          buyer_id: existingBuyer.id,
+          company_id: company.id,
+          installment_number: lastNumber + entry.installment_number,
+          due_date: entry.due_date,
+          expected_amount: entry.expected_amount,
+        }))
+
+        if (scheduleEntries.length > 0) {
+          await adminClient.from('payment_schedules').insert(scheduleEntries)
+        }
       }
 
       // Decrement available plots

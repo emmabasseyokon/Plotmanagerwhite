@@ -249,6 +249,12 @@ export default function NewBuyerPage() {
         const today = new Date().toISOString().split('T')[0]
         const plotNote = `Added ${data.number_of_plots || 1} plot(s) on ${today}: ${data.plot_size || 'N/A'}`
 
+        // Append new payment proof to documents array
+        const existingDocs = Array.isArray(existing.documents) ? existing.documents : []
+        const updatedDocs = paymentProofUrl
+          ? [...existingDocs, { url: paymentProofUrl, label: `Proof - ${data.plot_size || 'Additional plot'}`, date: today }]
+          : existingDocs
+
         const mergePayload: Record<string, unknown> = {
           plot_size: mergedPlotSize,
           number_of_plots: mergedPlotCount,
@@ -256,8 +262,20 @@ export default function NewBuyerPage() {
           amount_paid: mergedAmountPaid,
           payment_status: mergedPaymentStatus,
           notes: existing.notes ? `${existing.notes}\n${plotNote}` : plotNote,
+          documents: updatedDocs,
         }
         if (data.agent_id) mergePayload.agent_id = data.agent_id
+
+        // Include installment plan data so the API generates a schedule
+        // Use cumulative initial_deposit so the schedule covers the full remaining balance
+        if (paymentType === 'installment' && durationMonths > 0 && startDate) {
+          mergePayload.installment_plan = {
+            enabled: true,
+            duration_months: durationMonths,
+            start_date: startDate,
+            initial_deposit: (existing.initial_deposit || 0) + initialDeposit,
+          }
+        }
 
         const res = await fetch(`/api/buyers/${fromBuyerId}`, {
           method: 'PUT',

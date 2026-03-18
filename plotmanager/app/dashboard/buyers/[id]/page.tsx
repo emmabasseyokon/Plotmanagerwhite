@@ -372,20 +372,35 @@ export default async function BuyerDetailPage({
                 </div>
               </div>
             )}
-            {buyer.payment_proof_url && (
+            {(buyer.payment_proof_url || (Array.isArray(buyer.documents) && buyer.documents.length > 0)) && (
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 bg-violet-50 rounded-lg flex items-center justify-center flex-shrink-0">
                   <FileText className="w-4 h-4 text-violet-600" />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Proof of Payment</p>
-                  <a href={buyer.payment_proof_url} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={buyer.payment_proof_url}
-                      alt="Payment proof"
-                      className="h-24 w-auto rounded-lg border border-gray-200 object-cover hover:border-primary-500 transition-colors"
-                    />
-                  </a>
+                  <div className="flex flex-wrap gap-2">
+                    {buyer.payment_proof_url && (
+                      <a href={buyer.payment_proof_url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={buyer.payment_proof_url}
+                          alt="Payment proof"
+                          className="h-24 w-auto rounded-lg border border-gray-200 object-cover hover:border-primary-500 transition-colors"
+                        />
+                      </a>
+                    )}
+                    {Array.isArray(buyer.documents) && buyer.documents.map((doc: any, idx: number) => (
+                      doc?.url && (
+                        <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" title={doc.label || `Proof ${idx + 2}`}>
+                          <img
+                            src={doc.url}
+                            alt={doc.label || `Payment proof ${idx + 2}`}
+                            className="h-24 w-auto rounded-lg border border-gray-200 object-cover hover:border-primary-500 transition-colors"
+                          />
+                        </a>
+                      )
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
