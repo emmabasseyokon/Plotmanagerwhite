@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { BarChart3, TrendingUp, Target, Award } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { REFERRAL_OPTIONS } from '@/lib/constants'
-import { ReferralCharts } from '@/components/analytics/ReferralCharts'
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
@@ -61,13 +60,6 @@ export default async function AnalyticsPage() {
     ...Object.keys(sourceMap).filter(s => !REFERRAL_OPTIONS.includes(s)),
   ]
 
-  const chartData = orderedSources.map(source => ({
-    source,
-    buyers: sourceMap[source].buyers,
-    plots: sourceMap[source].plots,
-    revenue: sourceMap[source].revenue,
-  }))
-
   const tableData = orderedSources.map(source => {
     const d = sourceMap[source]
     return {
@@ -122,13 +114,6 @@ export default async function AnalyticsPage() {
           )
         })}
       </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <h2 className="font-display text-xl font-bold text-gray-900 mb-6">Referral Source Performance</h2>
-          <ReferralCharts data={chartData} />
-        </CardContent>
-      </Card>
 
       <Card>
         <CardContent className="p-6">
