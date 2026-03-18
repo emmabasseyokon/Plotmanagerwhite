@@ -106,23 +106,26 @@ export async function PUT(
       .from('buyers').select('payment_status').eq('id', id).eq('company_id', companyId).single()
 
     if (newEstateId !== undefined && newEstateId !== oldEstateId && fullBuyer && fullBuyer.payment_status === 'fully_paid') {
-      // Increment old estate (plot freed up)
+      const plotCount = buyer?.number_of_plots || 1
+      // Increment old estate (plots freed up)
       if (oldEstateId) {
         const { data: oldEstate } = await adminClient
           .from('estates').select('available_plots, total_plots').eq('id', oldEstateId).single()
-        if (oldEstate && oldEstate.available_plots < oldEstate.total_plots) {
+        if (oldEstate) {
+          const restored = Math.min(oldEstate.available_plots + plotCount, oldEstate.total_plots)
           await adminClient.from('estates')
-            .update({ available_plots: oldEstate.available_plots + 1 })
+            .update({ available_plots: restored })
             .eq('id', oldEstateId)
         }
       }
-      // Decrement new estate (plot claimed)
+      // Decrement new estate (plots claimed)
       if (newEstateId) {
         const { data: newEstate } = await adminClient
           .from('estates').select('available_plots').eq('id', newEstateId).single()
-        if (newEstate && newEstate.available_plots > 0) {
+        if (newEstate) {
+          const newAvailable = Math.max(0, newEstate.available_plots - plotCount)
           await adminClient.from('estates')
-            .update({ available_plots: newEstate.available_plots - 1 })
+            .update({ available_plots: newAvailable })
             .eq('id', newEstateId)
         }
       }

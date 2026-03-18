@@ -86,15 +86,17 @@ export async function POST(request: NextRequest) {
 
     // Decrement available_plots if buyer paid outright and has an estate
     if (insertData.payment_status === 'fully_paid' && insertData.estate_id) {
+      const plotCount = insertData.number_of_plots || 1
       const { data: estate } = await adminClient
         .from('estates')
         .select('available_plots')
         .eq('id', insertData.estate_id)
         .single()
       if (estate && estate.available_plots > 0) {
+        const newAvailable = Math.max(0, estate.available_plots - plotCount)
         await adminClient
           .from('estates')
-          .update({ available_plots: estate.available_plots - 1 })
+          .update({ available_plots: newAvailable })
           .eq('id', insertData.estate_id)
       }
     }
