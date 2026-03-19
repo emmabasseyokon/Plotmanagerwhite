@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { agentSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 import type { TablesInsert } from '@/types/database.types'
 
 export async function GET(request: NextRequest) {
@@ -74,6 +75,16 @@ export async function POST(request: NextRequest) {
     if (error) {
       return serverError(error, 'POST /api/agents')
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'created',
+      entityType: 'agent',
+      entityId: agent.id,
+      entityLabel: `${parsed.data.first_name} ${parsed.data.last_name}`,
+    })
 
     return NextResponse.json({ agent }, { status: 201 })
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { agentSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 import type { TablesUpdate } from '@/types/database.types'
 
 export async function GET(
@@ -93,6 +94,18 @@ export async function PUT(
       return serverError(error, 'agents/[id]')
     }
 
+    if (agent) {
+      logActivity({
+        companyId,
+        userId: result.auth.userId,
+        userName: result.auth.userName,
+        action: 'updated',
+        entityType: 'agent',
+        entityId: id,
+        entityLabel: `${agent.first_name} ${agent.last_name}`,
+      })
+    }
+
     return NextResponse.json({ agent })
   } catch (err) {
     return serverError(err, 'agents/[id]')
@@ -109,6 +122,14 @@ export async function DELETE(
     if (result.error) return result.error
     const { companyId, adminClient } = result.auth
 
+    // Get agent name before deleting
+    const { data: existing } = await adminClient
+      .from('agents')
+      .select('first_name, last_name')
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .single()
+
     const { error } = await adminClient
       .from('agents')
       .delete()
@@ -118,6 +139,16 @@ export async function DELETE(
     if (error) {
       return serverError(error, 'agents/[id]')
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'deleted',
+      entityType: 'agent',
+      entityId: id,
+      entityLabel: existing ? `${existing.first_name} ${existing.last_name}` : undefined,
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

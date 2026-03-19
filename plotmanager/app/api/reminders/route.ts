@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { reminderSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { paymentReminderHtml, broadcastEmailHtml } from '@/lib/email-templates'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -137,6 +138,17 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       return serverError(insertError, 'POST /api/reminders')
     }
+
+    logActivity({
+      companyId,
+      userId,
+      userName: result.auth.userName,
+      action: 'created',
+      entityType: 'reminder',
+      entityId: reminder?.id,
+      entityLabel: `Reminder to ${buyer.first_name} ${buyer.last_name}`,
+      details: { reminder_type: parsed.data.reminder_type, email_sent: emailSent },
+    })
 
     return NextResponse.json({ reminder, emailSent, emailError }, { status: 201 })
   } catch {

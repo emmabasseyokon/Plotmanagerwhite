@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, requireSuperAdmin, serverError } from '@/lib/api-helpers'
+import { logActivity } from '@/lib/activity-log'
 
 export async function DELETE(
   _request: NextRequest,
@@ -22,7 +23,7 @@ export async function DELETE(
     // Verify target belongs to same company and is not a super_admin
     const { data: targetProfile } = await auth.adminClient
       .from('profiles')
-      .select('id, role, company_id')
+      .select('id, role, company_id, full_name')
       .eq('id', id)
       .eq('company_id', auth.companyId)
       .single()
@@ -38,6 +39,16 @@ export async function DELETE(
     // Delete profile then auth user
     await auth.adminClient.from('profiles').delete().eq('id', id)
     await auth.adminClient.auth.admin.deleteUser(id)
+
+    logActivity({
+      companyId: auth.companyId,
+      userId: auth.userId,
+      userName: auth.userName,
+      action: 'deleted',
+      entityType: 'admin',
+      entityId: id,
+      entityLabel: targetProfile.full_name,
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { paymentSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 import type { Tables } from '@/types/database.types'
 
-type BuyerPaymentInfo = Pick<Tables<'buyers'>, 'id' | 'total_amount' | 'amount_paid' | 'payment_status' | 'estate_id'>
+type BuyerPaymentInfo = Pick<Tables<'buyers'>, 'id' | 'first_name' | 'last_name' | 'total_amount' | 'amount_paid' | 'payment_status' | 'estate_id'>
 type ScheduleEntry = Pick<Tables<'payment_schedules'>, 'id' | 'expected_amount' | 'paid_amount'>
 
 export async function POST(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Verify the buyer belongs to this company
     const { data: buyer, error: buyerError } = await adminClient
       .from('buyers')
-      .select('id, total_amount, amount_paid, payment_status, estate_id')
+      .select('id, first_name, last_name, total_amount, amount_paid, payment_status, estate_id')
       .eq('id', parsed.data.buyer_id)
       .eq('company_id', companyId)
       .single()
@@ -255,6 +256,17 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    logActivity({
+      companyId,
+      userId,
+      userName: result.auth.userName,
+      action: 'created',
+      entityType: 'payment',
+      entityId: payment.id,
+      entityLabel: `Payment for ${typedBuyer.first_name} ${typedBuyer.last_name}`,
+      details: { amount: parsed.data.amount, buyer_id: parsed.data.buyer_id },
+    })
 
     return NextResponse.json({ payment, newAmountPaid, newPaymentStatus }, { status: 201 })
   } catch (err) {

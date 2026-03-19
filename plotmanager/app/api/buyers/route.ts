@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import { logActivity } from '@/lib/activity-log'
 import type { TablesInsert } from '@/types/database.types'
 
 export async function GET(request: NextRequest) {
@@ -164,6 +165,17 @@ export async function POST(request: NextRequest) {
         })
       }
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'created',
+      entityType: 'buyer',
+      entityId: buyer.id,
+      entityLabel: `${buyerFields.first_name} ${buyerFields.last_name}`,
+      details: { estate_id: insertData.estate_id, total_amount: buyerFields.total_amount },
+    })
 
     return NextResponse.json({ buyer }, { status: 201 })
   } catch (err) {

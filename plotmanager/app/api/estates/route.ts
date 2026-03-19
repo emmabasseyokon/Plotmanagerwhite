@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError, sanitizeSearch } from '@/lib/api-helpers'
 import { estateSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,6 +72,17 @@ export async function POST(request: NextRequest) {
     if (error) {
       return serverError(error, 'POST /api/estates')
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'created',
+      entityType: 'estate',
+      entityId: estate.id,
+      entityLabel: parsed.data.name,
+      details: { total_plots: parsed.data.total_plots, location: parsed.data.location },
+    })
 
     return NextResponse.json({ estate }, { status: 201 })
   } catch (err) {

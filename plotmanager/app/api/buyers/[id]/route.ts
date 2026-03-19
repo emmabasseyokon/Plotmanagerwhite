@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { buyerSchema } from '@/lib/validations'
 import { generateInstallmentSchedule } from '@/lib/schedule'
+import { logActivity } from '@/lib/activity-log'
 import type { TablesUpdate } from '@/types/database.types'
 
 export async function GET(
@@ -174,6 +175,18 @@ export async function PUT(
       }
     }
 
+    if (buyer) {
+      logActivity({
+        companyId,
+        userId: result.auth.userId,
+        userName: result.auth.userName,
+        action: 'updated',
+        entityType: 'buyer',
+        entityId: id,
+        entityLabel: `${buyer.first_name} ${buyer.last_name}`,
+      })
+    }
+
     return NextResponse.json({ buyer })
   } catch (err) {
     return serverError(err, 'buyers/[id]')
@@ -193,7 +206,7 @@ export async function DELETE(
     // Get buyer with estate and payment info before deleting
     const { data: existing } = await adminClient
       .from('buyers')
-      .select('id, estate_id, payment_status, number_of_plots')
+      .select('id, first_name, last_name, estate_id, payment_status, number_of_plots')
       .eq('id', id)
       .eq('company_id', companyId)
       .single()
@@ -202,6 +215,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
     }
 
+    const buyerLabel = `${existing.first_name} ${existing.last_name}`
     const estateId = existing.estate_id
     const wasFullyPaid = existing.payment_status === 'fully_paid'
 
@@ -227,6 +241,16 @@ export async function DELETE(
           .eq('id', estateId)
       }
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'deleted',
+      entityType: 'buyer',
+      entityId: id,
+      entityLabel: buyerLabel,
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

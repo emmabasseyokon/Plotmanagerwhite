@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string | null
+          user_name: string
+          action: string
+          entity_type: string
+          entity_id: string | null
+          entity_label: string | null
+          details: Json
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id?: string | null
+          user_name: string
+          action: string
+          entity_type: string
+          entity_id?: string | null
+          entity_label?: string | null
+          details?: Json
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          user_id?: string | null
+          user_name?: string
+          action?: string
+          entity_type?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          details?: Json
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           id: string

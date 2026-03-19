@@ -7,6 +7,7 @@ export interface AuthResult {
   userId: string
   companyId: string
   role: 'super_admin' | 'admin'
+  userName: string
   adminClient: ReturnType<typeof createAdminClient>
 }
 
@@ -27,7 +28,7 @@ export async function authenticateRequest(): Promise<
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('company_id, role')
+    .select('company_id, role, full_name')
     .eq('id', user.id)
     .single()
 
@@ -40,6 +41,7 @@ export async function authenticateRequest(): Promise<
       userId: user.id,
       companyId: profile.company_id,
       role: profile.role as 'super_admin' | 'admin',
+      userName: profile.full_name,
       adminClient: createAdminClient(),
     },
   }

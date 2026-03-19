@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, requireSuperAdmin, validationError, serverError } from '@/lib/api-helpers'
 import { createAdminSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,6 +43,16 @@ export async function POST(request: NextRequest) {
       await auth.adminClient.auth.admin.deleteUser(newAuthUser.user.id)
       return NextResponse.json({ error: 'Failed to create admin profile' }, { status: 500 })
     }
+
+    logActivity({
+      companyId: auth.companyId,
+      userId: auth.userId,
+      userName: auth.userName,
+      action: 'created',
+      entityType: 'admin',
+      entityId: newAuthUser.user.id,
+      entityLabel: parsed.data.full_name,
+    })
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (err) {

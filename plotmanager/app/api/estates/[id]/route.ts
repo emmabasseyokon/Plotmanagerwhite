@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, validationError, serverError } from '@/lib/api-helpers'
 import { estateSchema } from '@/lib/validations'
+import { logActivity } from '@/lib/activity-log'
 
 export async function GET(
   _request: NextRequest,
@@ -75,6 +76,18 @@ export async function PUT(
       return serverError(error, `estates/${id}`)
     }
 
+    if (estate) {
+      logActivity({
+        companyId,
+        userId: result.auth.userId,
+        userName: result.auth.userName,
+        action: 'updated',
+        entityType: 'estate',
+        entityId: id,
+        entityLabel: estate.name,
+      })
+    }
+
     return NextResponse.json({ estate })
   } catch (err) {
     return serverError(err, 'estates/[id]')
@@ -93,7 +106,7 @@ export async function DELETE(
 
     const { data: existing } = await adminClient
       .from('estates')
-      .select('id')
+      .select('id, name')
       .eq('id', id)
       .eq('company_id', companyId)
       .single()
@@ -111,6 +124,16 @@ export async function DELETE(
     if (error) {
       return serverError(error, `estates/${id}`)
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'deleted',
+      entityType: 'estate',
+      entityId: id,
+      entityLabel: existing.name,
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, serverError } from '@/lib/api-helpers'
+import { logActivity } from '@/lib/activity-log'
 
 export async function PUT(
   request: NextRequest,
@@ -30,6 +31,17 @@ export async function PUT(
     if (error || !commission) {
       return NextResponse.json({ error: 'Commission not found' }, { status: 404 })
     }
+
+    logActivity({
+      companyId,
+      userId: result.auth.userId,
+      userName: result.auth.userName,
+      action: 'updated',
+      entityType: 'commission',
+      entityId: id,
+      entityLabel: `Commission status → ${body.status}`,
+      details: { status: body.status },
+    })
 
     return NextResponse.json({ commission })
   } catch (err) {
