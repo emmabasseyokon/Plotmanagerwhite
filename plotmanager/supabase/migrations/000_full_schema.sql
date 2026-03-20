@@ -302,7 +302,30 @@ CREATE INDEX IF NOT EXISTS idx_reminders_sent ON reminders(sent_at DESC);
 ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
--- 10. RLS POLICIES
+-- 10. ACTIVITY LOGS (audit trail)
+-- ============================================
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    user_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id UUID,
+    entity_label TEXT,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_activity_logs_company ON activity_logs(company_id);
+CREATE INDEX idx_activity_logs_created ON activity_logs(created_at DESC);
+CREATE INDEX idx_activity_logs_entity_type ON activity_logs(entity_type);
+CREATE INDEX idx_activity_logs_user ON activity_logs(user_id);
+
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- 11. RLS POLICIES
 -- ============================================
 
 -- Companies: admins can see their own company
@@ -457,8 +480,13 @@ CREATE POLICY "Users can delete own company reminders"
     ON reminders FOR DELETE TO authenticated
     USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
 
+-- Activity Logs: admins can view their company's logs
+CREATE POLICY "Users can view own company activity logs"
+    ON activity_logs FOR SELECT TO authenticated
+    USING (company_id IN (SELECT company_id FROM profiles WHERE profiles.id = auth.uid()));
+
 -- ============================================
--- 11. SERVICE ROLE POLICIES (for API operations)
+-- 12. SERVICE ROLE POLICIES (for API operations)
 -- ============================================
 CREATE POLICY "Service role full access to companies"
     ON companies FOR ALL TO service_role
@@ -500,8 +528,12 @@ CREATE POLICY "Service role full access to reminders"
     ON reminders FOR ALL TO service_role
     USING (true) WITH CHECK (true);
 
+CREATE POLICY "Service role full access to activity_logs"
+    ON activity_logs FOR ALL TO service_role
+    USING (true) WITH CHECK (true);
+
 -- ============================================
--- 12. STORAGE: Estate images bucket & policies
+-- 13. STORAGE: Estate images bucket & policies
 -- ============================================
 
 -- Create the storage bucket for estate images (public read)
@@ -530,7 +562,7 @@ CREATE POLICY "Public read access to estate images"
     USING (bucket_id = 'estates');
 
 -- ============================================
--- 13. STORAGE: Buyer documents bucket & policies
+-- 14. STORAGE: Buyer documents bucket & policies
 -- ============================================
 
 -- Create the storage bucket for buyer documents (public read)
@@ -560,7 +592,7 @@ CREATE POLICY "Service role full access to buyer-documents"
     USING (bucket_id = 'buyer-documents') WITH CHECK (bucket_id = 'buyer-documents');
 
 -- ============================================
--- 14. SEED: Pre-create the company
+-- 15. SEED: Pre-create the company
 -- Replace these values with the client's details
 -- Then set APP_COMPANY_ID in .env.local to the generated UUID
 -- ============================================
