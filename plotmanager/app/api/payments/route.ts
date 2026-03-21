@@ -4,7 +4,7 @@ import { paymentSchema } from '@/lib/validations'
 import { logActivity } from '@/lib/activity-log'
 import type { Tables } from '@/types/database.types'
 
-type BuyerPaymentInfo = Pick<Tables<'buyers'>, 'id' | 'first_name' | 'last_name' | 'total_amount' | 'amount_paid' | 'payment_status' | 'estate_id'>
+type BuyerPaymentInfo = Pick<Tables<'buyers'>, 'id' | 'first_name' | 'last_name' | 'total_amount' | 'amount_paid' | 'payment_status' | 'estate_id' | 'number_of_plots'>
 type ScheduleEntry = Pick<Tables<'payment_schedules'>, 'id' | 'expected_amount' | 'paid_amount'>
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Verify the buyer belongs to this company
     const { data: buyer, error: buyerError } = await adminClient
       .from('buyers')
-      .select('id, first_name, last_name, total_amount, amount_paid, payment_status, estate_id')
+      .select('id, first_name, last_name, total_amount, amount_paid, payment_status, estate_id, number_of_plots')
       .eq('id', parsed.data.buyer_id)
       .eq('company_id', companyId)
       .single()
@@ -68,15 +68,16 @@ export async function POST(request: NextRequest) {
 
     // Decrement available_plots when buyer transitions to fully_paid
     if (newPaymentStatus === 'fully_paid' && typedBuyer.payment_status !== 'fully_paid' && typedBuyer.estate_id) {
+      const plotCount = typedBuyer.number_of_plots || 1
       const { data: estate } = await adminClient
         .from('estates')
         .select('available_plots')
         .eq('id', typedBuyer.estate_id)
         .single()
-      if (estate && estate.available_plots > 0) {
+      if (estate && estate.available_plots >= plotCount) {
         await adminClient
           .from('estates')
-          .update({ available_plots: estate.available_plots - 1 })
+          .update({ available_plots: estate.available_plots - plotCount })
           .eq('id', typedBuyer.estate_id)
       }
     }

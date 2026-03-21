@@ -67,7 +67,7 @@ export async function PUT(
     if (amountDiff !== 0) {
       const { data: buyer } = await adminClient
         .from('buyers')
-        .select('id, first_name, last_name, amount_paid, total_amount, payment_status, estate_id')
+        .select('id, first_name, last_name, amount_paid, total_amount, payment_status, estate_id, number_of_plots')
         .eq('id', existingPayment.buyer_id)
         .eq('company_id', companyId)
         .single()
@@ -86,30 +86,32 @@ export async function PUT(
 
         // Handle estate available_plots if status changed
         if (buyer.estate_id) {
+          const plotCount = buyer.number_of_plots || 1
           if (wasFullyPaid && newPaymentStatus !== 'fully_paid') {
-            // Was fully paid, now not — restore a plot
+            // Was fully paid, now not — restore plots
             const { data: estate } = await adminClient
               .from('estates')
               .select('available_plots, total_plots')
               .eq('id', buyer.estate_id)
               .single()
-            if (estate && estate.available_plots < estate.total_plots) {
+            if (estate) {
+              const restored = Math.min(estate.available_plots + plotCount, estate.total_plots)
               await adminClient
                 .from('estates')
-                .update({ available_plots: estate.available_plots + 1 })
+                .update({ available_plots: restored })
                 .eq('id', buyer.estate_id)
             }
           } else if (!wasFullyPaid && newPaymentStatus === 'fully_paid') {
-            // Newly fully paid — decrement a plot
+            // Newly fully paid — claim plots
             const { data: estate } = await adminClient
               .from('estates')
               .select('available_plots')
               .eq('id', buyer.estate_id)
               .single()
-            if (estate && estate.available_plots > 0) {
+            if (estate && estate.available_plots >= plotCount) {
               await adminClient
                 .from('estates')
-                .update({ available_plots: estate.available_plots - 1 })
+                .update({ available_plots: estate.available_plots - plotCount })
                 .eq('id', buyer.estate_id)
             }
           }
