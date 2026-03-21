@@ -18,6 +18,7 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BuyerActions } from '@/components/BuyerActions'
 import { RecordPayment } from '@/components/RecordPayment'
+import { EditPayment } from '@/components/EditPayment'
 import { ScheduleReminder } from '@/components/ScheduleReminder'
 import { SendReminder } from '@/components/SendReminder'
 import { AllocationToggle } from '@/components/AllocationToggle'
@@ -617,6 +618,14 @@ export default async function BuyerDetailPage({
                         <p className="text-sm text-gray-600">{payment.reference}</p>
                       </div>
                     )}
+                    <EditPayment payment={{
+                      id: payment.id,
+                      amount: payment.amount,
+                      payment_date: payment.payment_date,
+                      payment_method: payment.payment_method,
+                      reference: payment.reference,
+                      notes: payment.notes,
+                    }} />
                     <a
                       href={`/api/receipts/${payment.id}`}
                       title="Download Receipt"
