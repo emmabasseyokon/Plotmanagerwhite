@@ -9,24 +9,14 @@ const nextConfig = {
     ],
   },
   async headers() {
-    const securityHeaders = [
-      { key: 'X-Content-Type-Options', value: 'nosniff' },
-      { key: 'X-XSS-Protection', value: '1; mode=block' },
-      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-    ]
     return [
       {
-        // Public form pages — allow iframe embedding
-        source: '/form/:path*',
-        headers: securityHeaders,
-      },
-      {
-        // Everything else — block iframe embedding
         source: '/:path*',
         headers: [
-          ...securityHeaders,
-          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
     ]
