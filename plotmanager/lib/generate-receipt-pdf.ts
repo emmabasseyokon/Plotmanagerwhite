@@ -4,9 +4,18 @@ import autoTable from 'jspdf-autotable'
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: { finalY: number }
 }
-import { formatCurrency, formatDate } from './utils'
+import { formatDate } from './utils'
 import { PAYMENT_METHOD_LABELS } from './constants'
 import { getThemeColorRgb } from './theme'
+
+/** PDF-safe currency formatter — uses NGN prefix since jsPDF default fonts lack the ₦ glyph */
+function pdfCurrency(amount: number): string {
+  const formatted = new Intl.NumberFormat('en-NG', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+  return `NGN ${formatted}`
+}
 
 export interface ReceiptData {
   companyName: string
@@ -137,7 +146,7 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
 
   // --- Payment Details Table ---
   const paymentRows: string[][] = [
-    ['Amount Paid', formatCurrency(data.amount)],
+    ['Amount Paid', pdfCurrency(data.amount)],
     ['Payment Date', formatDate(data.paymentDate)],
     ['Payment Method', PAYMENT_METHOD_LABELS[data.paymentMethod] || data.paymentMethod],
   ]
@@ -174,9 +183,9 @@ export function generateReceiptPdf(data: ReceiptData): Buffer {
     startY: summaryY,
     head: [['Payment Summary', 'Amount']],
     body: [
-      ['Total Price', formatCurrency(data.totalAmount)],
-      ['Total Paid to Date', formatCurrency(data.amountPaid)],
-      ['Outstanding Balance', formatCurrency(data.outstandingBalance)],
+      ['Total Price', pdfCurrency(data.totalAmount)],
+      ['Total Paid to Date', pdfCurrency(data.amountPaid)],
+      ['Outstanding Balance', pdfCurrency(data.outstandingBalance)],
     ],
     theme: 'striped',
     headStyles: {
