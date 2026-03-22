@@ -35,6 +35,11 @@ export default async function proxy(request: NextRequest) {
 
   console.log('[Proxy]', request.nextUrl.pathname, '→ user:', user?.id ?? 'anonymous')
 
+  // Block iframe embedding for all routes except public form pages
+  if (!request.nextUrl.pathname.startsWith('/form')) {
+    supabaseResponse.headers.set('X-Frame-Options', 'DENY')
+  }
+
   return supabaseResponse
 }
 
