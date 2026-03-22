@@ -23,9 +23,6 @@ function baseLayout(companyName: string, content: string): string {
         ${content}
       </div>
       <div style="padding:20px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;color:#9ca3af;font-size:13px;text-align:center;">
-          Sent on behalf of ${escapeHtml(companyName)}
-        </p>
       </div>
     </div>
   </div>
