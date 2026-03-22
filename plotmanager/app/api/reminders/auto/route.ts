@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Get all companies with auto reminders enabled
     const { data: companies } = await adminClient
       .from('companies')
-      .select('id, name, auto_reminders_enabled, reminder_days_before')
+      .select('id, name, phone, email, auto_reminders_enabled, reminder_days_before')
 
     if (!companies) {
       return NextResponse.json({ sent: 0, skipped: 0 })
@@ -104,6 +104,8 @@ export async function POST(request: NextRequest) {
             html: paymentReminderHtml({
               buyerFirstName: buyer.first_name,
               companyName: company.name,
+              companyPhone: company.phone,
+              companyEmail: company.email,
               amountDue: formatCurrency(remaining),
               dueDate: formatDate(entry.due_date),
               isOverdue,

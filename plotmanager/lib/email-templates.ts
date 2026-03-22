@@ -36,11 +36,13 @@ function baseLayout(companyName: string, content: string): string {
 export function paymentReminderHtml(params: {
   buyerFirstName: string
   companyName: string
+  companyPhone?: string | null
+  companyEmail?: string | null
   amountDue: string
   dueDate: string
   isOverdue: boolean
 }): string {
-  const { buyerFirstName, companyName, amountDue, dueDate, isOverdue } = params
+  const { buyerFirstName, companyName, companyPhone, companyEmail, amountDue, dueDate, isOverdue } = params
 
   const statusColor = isOverdue ? '#dc2626' : '#f59e0b'
   const statusLabel = isOverdue ? 'OVERDUE' : 'UPCOMING'
@@ -64,8 +66,11 @@ export function paymentReminderHtml(params: {
       Please make your payment at your earliest convenience. If you have already made this payment, kindly disregard this reminder.
     </p>
     <p style="margin:0;color:#374151;font-size:15px;line-height:1.6;">
-      If you have any questions, please contact us directly.
+      If you have any questions, please contact us directly${companyPhone || companyEmail ? ':' : '.'}
     </p>
+    ${companyPhone || companyEmail ? `<p style="margin:8px 0 0;color:#374151;font-size:15px;line-height:1.6;">
+      ${companyPhone ? `📞 <strong>${escapeHtml(companyPhone)}</strong>` : ''}${companyPhone && companyEmail ? '&nbsp;&nbsp;|&nbsp;&nbsp;' : ''}${companyEmail ? `✉️ <strong>${escapeHtml(companyEmail)}</strong>` : ''}
+    </p>` : ''}
     <p style="margin:24px 0 0;color:#374151;font-size:15px;">
       Best regards,<br><strong>${escapeHtml(companyName)}</strong>
     </p>`

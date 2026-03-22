@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Get company name
     const { data: company } = await adminClient
       .from('companies')
-      .select('name')
+      .select('name, phone, email')
       .eq('id', companyId)
       .single()
 
@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
       : paymentReminderHtml({
           buyerFirstName: buyer.first_name,
           companyName,
+          companyPhone: company?.phone,
+          companyEmail: company?.email,
           amountDue: formatCurrency(amountDue),
           dueDate: dueDate ? formatDate(dueDate) : 'N/A',
           isOverdue,
